@@ -1,5 +1,5 @@
 ![alt text](https://github.com/Faedyl/Weiblogja/blob/main/docs/images/logo.webp?raw=true)
-tThis is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
 
