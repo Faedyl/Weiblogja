@@ -1,5 +1,6 @@
 import styles from './sidebar.module.css'
 import { House, LibraryBig, UserRoundPen } from 'lucide-react'
+import Link from 'next/link'
 function Sidebar() {
 	return (
 
@@ -7,15 +8,15 @@ function Sidebar() {
 			<div className={styles.sidebarItems}>
 				<ul className={styles.item}>
 					<House color='#154D71' size='28' />
-					<a>Home</a>
+					<Link href="/">Home</Link>
 				</ul>
 				<ul className={styles.item}>
 					<LibraryBig color='#154D71' size='28' />
-					<a>Library</a>
+					<Link href="/library">Library</Link>
 				</ul>
 				<ul className={styles.item}>
 					<UserRoundPen color='#154D71' size='28' />
-					<a>Profile</a>
+					<Link href="/profile">Profile</Link>
 				</ul>
 			</div>
 		</div>
