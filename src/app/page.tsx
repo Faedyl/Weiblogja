@@ -3,6 +3,9 @@ import styles from "./page.module.css";
 
 export default function Home() {
 	return (
-		<span>Test</span>
+		<div className={styles.DivContainer}>
+			<span>Test</span>
+		</div>
+
 	);
 }
