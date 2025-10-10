@@ -26,7 +26,7 @@ export default function Library() {
 	}
 
 	return (
-		<div className={styles.libraryContainer}>
+		<div className={styles.DivContainer}>
 			<div className={styles.header}>
 				<h1>Article Library</h1>
 				<p>Search and discover articles from our collection</p>
