@@ -10,22 +10,21 @@
 
 .sidebarItems ul li {
 	margin: 8px 10px;
+	list-style-type: none;
 }
 
-.sidebarItems li {
+.sidebarItems a {
+	padding: 1em;
+	font-size: 15pt;
 	display: flex;
 	flex-wrap: wrap;
+	border-radius: 1.5em;
 	gap: 1.2em;
 	align-items: center;
 	color: #0f0f0f;
-	padding: 0.5em;
 
 }
 
-.sidebarItems li a {
-	padding: 0.5em;
-	font-size: 15pt;
-}
 
 .sidebarItems li:hover {
 
@@ -38,16 +37,18 @@
 }
 
 .sidebarItems li.active {
+	a {
+		color: #ffff;
+	}
 
 	svg {
 		stroke: #ffff;
 	}
 
+	border-radius:1.5em;
 	background-color: #154D71;
 	transition: background-color,
 	transform 0.6s ease-in-out;
-	border-radius: 1.5em;
 	font-weight: 300;
-	color: #ffff;
 	cursor: pointer;
 }
