@@ -13,16 +13,24 @@ function Sidebar() {
 				<ul>
 
 					<li className={pathname == '/' ? styles.active : ''}>
-						<House color='#154D71' size='28' />
-						<Link href="/">Home</Link>
+
+						<Link href="/">
+							<House color='#154D71' size='28' />
+							Home
+						</Link>
 					</li>
 					<li className={pathname == '/library' ? styles.active : ''}>
-						<LibraryBig color='#154D71' size='28' />
-						<Link href="/library">Library</Link>
+						<Link href="/library">
+							<LibraryBig color='#154D71' size='28' />
+							Library
+						</Link>
 					</li>
 					<li className={pathname == '/profile' ? styles.active : ''}>
-						<UserRoundPen color='#154D71' size='28' />
-						<Link href="/profile">Profile</Link>
+						<Link href="/profile">
+							<UserRoundPen color='#154D71' size='28' />
+
+							Profile
+						</Link>
 					</li>
 				</ul>
 			</div>
