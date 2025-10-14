@@ -1,0 +1,115 @@
+.content {
+	font-size: 1.1rem;
+	line-height: 1.8;
+	color: #333;
+	max-width: 800px;
+	margin: 0 auto;
+}
+
+.paragraph {
+	margin-bottom: 1.5rem;
+	text-align: justify;
+	text-justify: inter-word;
+}
+
+.paragraph:last-child {
+	margin-bottom: 0;
+}
+
+.imageContainer {
+	margin: 2rem 0;
+	text-align: center;
+	background: #f8f9fa;
+	border-radius: 12px;
+	padding: 1rem;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.contentImage {
+	width: 100%;
+	height: auto;
+	border-radius: 8px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	transition: transform 0.3s ease;
+}
+
+.contentImage:hover {
+	transform: scale(1.02);
+}
+
+.imageCaption {
+	margin-top: 1rem;
+	margin-bottom: 0;
+	font-size: 0.9rem;
+	color: #666;
+	font-style: italic;
+	text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+	.content {
+		font-size: 1rem;
+		line-height: 1.7;
+		padding: 0 1rem;
+	}
+
+	.paragraph {
+		margin-bottom: 1.25rem;
+		text-align: left;
+	}
+
+	.imageContainer {
+		margin: 1.5rem -1rem;
+		border-radius: 8px;
+		padding: 0.75rem;
+	}
+
+	.contentImage {
+		border-radius: 6px;
+	}
+
+	.imageCaption {
+		font-size: 0.85rem;
+		margin-top: 0.75rem;
+		padding: 0 0.5rem;
+	}
+}
+
+@media (max-width: 480px) {
+	.content {
+		font-size: 0.95rem;
+		padding: 0 0.5rem;
+	}
+
+	.imageContainer {
+		margin: 1rem -0.5rem;
+		padding: 0.5rem;
+	}
+
+	.imageCaption {
+		font-size: 0.8rem;
+		margin-top: 0.5rem;
+	}
+}
+
+/* Print styles */
+@media print {
+	.content {
+		font-size: 12pt;
+		line-height: 1.5;
+		color: black;
+	}
+
+	.contentImage {
+		box-shadow: none;
+		border: 1px solid #ddd;
+	}
+
+	.imageContainer {
+		background: white;
+		box-shadow: none;
+		border: 1px solid #ddd;
+		break-inside: avoid;
+	}
+}

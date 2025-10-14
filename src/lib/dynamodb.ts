@@ -19,20 +19,28 @@ export const TABLES = {
 }
 
 export interface BlogPost {
-	PK: string;
-	SK: string;
-	GSI1PK?: string;
-	GSI1SK?: string;
-	title: string;
-	content: string;
-	author_id: string;
-	category?: string;
-	status: 'published' | 'draft';
-	created_at: string;
-	updated_at: string;
-	views: number;
-	ai_generated: boolean;
-	slug?: string;
+	PK: string
+	SK: string
+	GSI1PK: string
+	GSI1SK: string
+	title: string
+	content: string
+	author_id: string
+	category?: string
+	status: 'draft' | 'published'
+	created_at: string
+	updated_at: string
+	views: number
+	ai_generated: boolean
+	slug: string
+	// New image fields
+	thumbnail_url?: string
+	images?: Array<{
+		url: string
+		alt: string
+		caption?: string
+		position: number // For ordering images within content
+	}>
 }
 
 // Get recent published blogs with error handling
@@ -234,7 +242,144 @@ export async function createSampleBlogs() {
 		};
 	}
 }
+// Add this to your existing dynamodb.ts file
+// Add this function to test blog with real S3 images
+export async function createTestBlogWithImages() {
+	try {
+		const tableName = process.env.DYNAMODB_TEST_TABLE
+		const currentTime = new Date().toISOString()
 
+		const blogWithRealImages = {
+			PK: "BLOG#real-s3-image-test",
+			SK: "METADATA",
+			GSI1PK: "AUTHOR#Faedyl",
+			GSI1SK: currentTime,
+			title: "Real S3 Image Test - Working Upload",
+			content: "This blog post demonstrates our working S3 integration! The thumbnail and embedded images are stored in our weiblogja-image S3 bucket.\n\nThis is the first paragraph introducing the successful integration.\n\nThis second paragraph should be followed by our first uploaded image.\n\nThis third paragraph continues after the image, showing how content flows around embedded images.\n\nAnd this final paragraph concludes our test with another image.",
+			author_id: "Faedyl",
+			category: "development",
+			status: "published" as const,
+			created_at: currentTime,
+			updated_at: currentTime,
+			views: 1,
+			ai_generated: false,
+			// Use a real S3 URL from your successful upload test
+			thumbnail_url: "https://weiblogja-image.s3.ap-southeast-1.amazonaws.com/weiblogja/blogs/thumbnails/author_Faedyl/test-upload-1760425611516/1760425611893_screenshot_07102025_192755.jpg",
+			images: [
+				{
+					url: "https://weiblogja-image.s3.ap-southeast-1.amazonaws.com/weiblogja/blogs/thumbnails/author_Faedyl/test-upload-1760425611516/1760425611893_screenshot_07102025_192755.jpg",
+					alt: "Successful S3 upload test image",
+					caption: "This image was successfully uploaded to our S3 bucket using the working upload system!",
+					position: 2
+				}
+			]
+		}
+
+		const command = new PutCommand({
+			TableName: tableName,
+			Item: blogWithRealImages
+		})
+
+		await dynamoDB.send(command)
+		console.log('✅ Test blog with real S3 images created!')
+
+		return { success: true, blog: blogWithRealImages }
+	} catch (error) {
+		console.error('❌ Error creating test blog:', error)
+		return { success: false, error }
+	}
+}
+export async function createSampleBlogsWithImages() {
+	try {
+		const tableName = process.env.DYNAMODB_TEST_TABLE;
+		const currentTime = new Date().toISOString();
+
+		// Sample blog with images
+		const blogWithImages = {
+			PK: "BLOG#test-blog-with-images",
+			SK: "METADATA",
+			GSI1PK: "AUTHOR#Faedyl",
+			GSI1SK: currentTime,
+			title: "Testing Image Functionality in Weiblogja",
+			content: "This is the first paragraph of our test blog post. It introduces the topic and sets the stage for what's to come.\n\nThis is the second paragraph. After this paragraph, we should see the first image.\n\nThis is the third paragraph that comes after the first image. It continues the discussion.\n\nThis is the fourth paragraph, and after this one, we'll see the second image.",
+			author_id: "Faedyl",
+			category: "testing",
+			status: "published" as const,
+			created_at: currentTime,
+			updated_at: currentTime,
+			views: 42,
+			ai_generated: false,
+			thumbnail_url: "https://picsum.photos/800/400?random=1",
+			images: [
+				{
+					url: "https://picsum.photos/800/400?random=2",
+					alt: "Test image 1 - Beautiful landscape",
+					caption: "This is a test image showing how images are embedded in blog content",
+					position: 2
+				},
+				{
+					url: "https://picsum.photos/800/400?random=3",
+					alt: "Test image 2 - Technology concept",
+					caption: "Another test image demonstrating multiple images in a single blog post",
+					position: 4
+				}
+			]
+		};
+
+		// Simple blog with only thumbnail
+		const blogWithThumbnail = {
+			PK: "BLOG#thumbnail-only-blog",
+			SK: "METADATA",
+			GSI1PK: "AUTHOR#Faedyl",
+			GSI1SK: currentTime,
+			title: "Blog Post with Thumbnail Only",
+			content: "This blog post has a thumbnail image but no embedded content images. This helps us test the BlogCard component display.",
+			author_id: "Faedyl",
+			category: "design",
+			status: "published" as const,
+			created_at: currentTime,
+			updated_at: currentTime,
+			views: 15,
+			ai_generated: true,
+			thumbnail_url: "https://picsum.photos/800/400?random=4"
+		};
+
+		// Blog without any images
+		const blogWithoutImages = {
+			PK: "BLOG#text-only-blog",
+			SK: "METADATA",
+			GSI1PK: "AUTHOR#Faedyl",
+			GSI1SK: currentTime,
+			title: "Text-Only Blog Post",
+			content: "This is a traditional blog post without any images. It helps us test that our components work correctly when no images are present.",
+			author_id: "Faedyl",
+			category: "writing",
+			status: "published" as const,
+			created_at: currentTime,
+			updated_at: currentTime,
+			views: 8,
+			ai_generated: false
+		};
+
+		const commands = [blogWithImages, blogWithThumbnail, blogWithoutImages].map(blog =>
+			new PutCommand({
+				TableName: tableName,
+				Item: blog
+			})
+		);
+
+		await Promise.all(commands.map(cmd => dynamoDB.send(cmd)));
+		console.log('✅ Sample blogs with images created successfully');
+
+		return {
+			success: true,
+			blogs: [blogWithImages, blogWithThumbnail, blogWithoutImages]
+		};
+	} catch (error) {
+		console.error('❌ Error creating sample blogs:', error);
+		return { success: false, error };
+	}
+}
 // Updated test function using current timestamp
 export async function testDynamoDBConnection() {
 	try {
