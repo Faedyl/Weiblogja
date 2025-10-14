@@ -1,11 +1,21 @@
 .sidebarContainer {
 	padding: 1.9em;
 	height: 100vh;
-	width: 30vh;
-	max-width: 35vh;
+	width: 280px;
+	min-width: 280px;
+	flex-shrink: 0;
+	/* This prevents the sidebar from shrinking */
 	background-color: #ffffff;
-	flex-grow: 3;
-	box-shadow: 2px 0 0 0 #f2f2f2;
+	box-shadow: 2px 0 0px rgba(0, 0, 0, 0.1);
+	position: sticky;
+	top: 0;
+	overflow-y: auto;
+}
+
+.sidebarItems ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
 }
 
 .sidebarItems ul li {
@@ -22,33 +32,56 @@
 	gap: 1.2em;
 	align-items: center;
 	color: #0f0f0f;
-
+	text-decoration: none;
 }
 
-
 .sidebarItems li:hover {
-
 	background-color: #e9f4fb;
-	transition: background-color,
-		transform 0.6s ease-in-out;
 	border-radius: 1.5em;
-	font-weight: 300;
 	cursor: pointer;
 }
 
 .sidebarItems li.active {
-	a {
-		color: #ffff;
-	}
-
-	svg {
-		stroke: #ffff;
-	}
-
-	border-radius:1.5em;
+	border-radius: 1.5em;
 	background-color: #154D71;
-	transition: background-color,
-	transform 0.6s ease-in-out;
-	font-weight: 300;
 	cursor: pointer;
+}
+
+.sidebarItems li.active a {
+	color: #ffffff;
+}
+
+.sidebarItems li.active svg {
+	stroke: #ffffff;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+	.sidebarContainer {
+		width: 100%;
+		min-width: 100%;
+		height: auto;
+		position: relative;
+		padding: 1rem;
+		flex-shrink: 1;
+	}
+
+	.sidebarItems ul {
+		display: flex;
+		justify-content: space-around;
+		flex-wrap: wrap;
+	}
+
+	.sidebarItems ul li {
+		margin: 4px;
+		flex: 1;
+		min-width: 120px;
+	}
+
+	.sidebarItems a {
+		padding: 0.8em;
+		font-size: 14pt;
+		gap: 0.8em;
+		justify-content: center;
+	}
 }
