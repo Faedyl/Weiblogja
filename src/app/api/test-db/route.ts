@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { testDynamoDBConnection, createTestBlog, createSampleBlogs } from '@/lib/dynamodb';
+import { testDynamoDBConnection, createTestBlog, createSampleBlogs, createTestBlogWithImages } from '@/lib/dynamodb';
 
 export async function GET() {
 	try {
 		const connectionResult = await testDynamoDBConnection();
 		const blogResult = await createTestBlog();
 		const sampleBlogsResult = await createSampleBlogs();
-
+		const testS3BlogsResult = await createTestBlogWithImages();
 		return NextResponse.json({
 			status: 'success',
 			message: 'Full DynamoDB test and blog initialization completed',
@@ -15,8 +15,8 @@ export async function GET() {
 			dev_table: process.env.DYNAMODB_TEST_TABLE,
 			results: {
 				connection: connectionResult,
-				testBlog: blogResult,
-				sampleBlogs: sampleBlogsResult
+				testS3: testS3BlogsResult
+
 			}
 		});
 	} catch (error) {

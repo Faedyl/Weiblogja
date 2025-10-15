@@ -46,7 +46,6 @@ export interface BlogPost {
 // Get recent published blogs with error handling
 export async function getRecentBlogs(limit: number = 6): Promise<BlogPost[]> {
 	try {
-		// Use the dev table
 		const tableName = process.env.DYNAMODB_TEST_TABLE;
 
 		if (!tableName) {
@@ -54,30 +53,47 @@ export async function getRecentBlogs(limit: number = 6): Promise<BlogPost[]> {
 			return [];
 		}
 
+		// Scan ALL blog posts first
 		const command = new ScanCommand({
 			TableName: tableName,
-			FilterExpression: "begins_with(PK, :blogPrefix) AND SK = :sk",
+			FilterExpression: "begins_with(PK, :blogPrefix) AND SK = :sk AND #status = :status",
 			ExpressionAttributeValues: {
 				":blogPrefix": "BLOG#",
-				":sk": "METADATA"
+				":sk": "METADATA",
+				":status": "published"
 			},
-			Limit: limit
+			ExpressionAttributeNames: {
+				"#status": "status"
+			}
+			// Remove Limit here to get ALL blogs first
 		});
 
 		const result = await dynamoDB.send(command);
-
 		const blogs = (result.Items || []) as BlogPost[];
 
-		// Sort by created_at descending and add slug
-		return blogs
-			.filter(blog => blog.status === 'published')
-			.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+		console.log(`📊 DynamoDB returned ${blogs.length} total blogs`);
+		console.log('📝 Blog timestamps:', blogs.map(b => ({ title: b.title, created: b.created_at })));
+
+		// Sort by created_at descending (newest first) and limit
+		const sortedBlogs = blogs
+			.sort((a, b) => {
+				const dateA = new Date(a.created_at).getTime();
+				const dateB = new Date(b.created_at).getTime();
+				return dateB - dateA; // Newest first
+			})
+			.slice(0, limit) // Take only requested number
 			.map(blog => ({
 				...blog,
 				slug: blog.PK.replace('BLOG#', '')
 			}));
+
+		console.log(`✅ Returning ${sortedBlogs.length} sorted blogs`);
+		console.log('🏆 Final order:', sortedBlogs.map(b => ({ title: b.title, created: b.created_at })));
+
+		return sortedBlogs;
+
 	} catch (error) {
-		console.error('Error fetching recent blogs:', error);
+		console.error('❌ Error fetching recent blogs:', error);
 		return [];
 	}
 }
@@ -264,10 +280,10 @@ export async function createTestBlogWithImages() {
 			views: 1,
 			ai_generated: false,
 			// Use a real S3 URL from your successful upload test
-			thumbnail_url: "https://weiblogja-image.s3.ap-southeast-1.amazonaws.com/weiblogja/blogs/thumbnails/author_Faedyl/test-upload-1760425611516/1760425611893_screenshot_07102025_192755.jpg",
+			thumbnail_url: "https://weiblogja-image.s3.ap-southeast-1.amazonaws.com/weiblogja/blogs/thumbnails/author_Faedyl/test-upload-1760427911062/1760427911366_Generated_Image_September_02__2025_-_3_11PM.jpeg",
 			images: [
 				{
-					url: "https://weiblogja-image.s3.ap-southeast-1.amazonaws.com/weiblogja/blogs/thumbnails/author_Faedyl/test-upload-1760425611516/1760425611893_screenshot_07102025_192755.jpg",
+					url: "https://weiblogja-image.s3.ap-southeast-1.amazonaws.com/weiblogja/blogs/thumbnails/author_Faedyl/test-upload-1760427911062/1760427911366_Generated_Image_September_02__2025_-_3_11PM.jpeg",
 					alt: "Successful S3 upload test image",
 					caption: "This image was successfully uploaded to our S3 bucket using the working upload system!",
 					position: 2

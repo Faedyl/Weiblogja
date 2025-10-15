@@ -70,11 +70,11 @@ export async function POST(request: NextRequest) {
 		})
 
 	} catch (error) {
-		console.error('❌ Upload API error:', error)
+		console.error('❌ Upload API error:', error as Error)
 		return NextResponse.json(
 			{
 				error: 'Failed to generate upload URL',
-				details: error.message
+				details: Error
 			},
 			{ status: 500 }
 		)

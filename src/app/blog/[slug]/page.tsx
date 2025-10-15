@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { Calendar, User, Eye } from 'lucide-react'
 import Link from 'next/link'
+import BlogContent from '@/app/components/blogcontent/blogContent'  // ← Add this import
 import styles from './blog.module.css'
 
 interface BlogPageProps {
@@ -59,11 +60,8 @@ export default async function BlogPage({ params }: BlogPageProps) {
 		})
 	}
 
-	const serverTimestamp = "2025-10-14 03:18:08"
-
 	return (
 		<div className={styles.container}>
-
 			<Link href="/" className={styles.backLink}>
 				← Back to Home
 			</Link>
@@ -100,9 +98,8 @@ export default async function BlogPage({ params }: BlogPageProps) {
 					)}
 				</header>
 
-				<div className={styles.content}>
-					<p>{blog.content}</p>
-				</div>
+				{/* 🔥 REPLACE THIS SECTION - Use BlogContent component */}
+				<BlogContent blog={blog} />
 
 				<footer className={styles.footer}>
 					<div className={styles.footerMeta}>

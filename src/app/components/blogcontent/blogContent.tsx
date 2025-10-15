@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { BlogPost } from '@/lib/dynamodb'
-import styles from './BlogContent.module.css'
+import styles from './blogContent.module.css'
 
 interface BlogContentProps {
 	blog: BlogPost
@@ -16,8 +16,7 @@ export default function BlogContent({ blog }: BlogContentProps) {
 		// Split content into paragraphs
 		const paragraphs = blog.content.split('\n\n')
 		const sortedImages = [...blog.images].sort((a, b) => a.position - b.position)
-
-		const content = []
+		const content: React.ReactNode[] = [];
 		let imageIndex = 0
 
 		paragraphs.forEach((paragraph, index) => {
