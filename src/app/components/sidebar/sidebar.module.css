@@ -4,11 +4,10 @@
 	width: 280px;
 	min-width: 280px;
 	flex-shrink: 0;
-	/* This prevents the sidebar from shrinking */
+	top: 70px;
 	background-color: #ffffff;
 	box-shadow: 2px 0 0px rgba(0, 0, 0, 0.1);
-	position: sticky;
-	top: 0;
+	position: fixed;
 	overflow-y: auto;
 }
 
@@ -33,6 +32,7 @@
 	align-items: center;
 	color: #0f0f0f;
 	text-decoration: none;
+	transition: all 0.3s ease;
 }
 
 .sidebarItems li:hover {
