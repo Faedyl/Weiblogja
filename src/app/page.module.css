@@ -1,10 +1,9 @@
 .DivContainer {
 	padding: 0;
-	margin: 0;
 	margin-left: 250px;
 	/* Account for sidebar width */
+	width: 100%;
 	min-height: 100%;
-	width: calc(100% - 250px);
 	display: flex;
 	flex-direction: column;
 }
@@ -94,7 +93,6 @@
 	gap: 2rem;
 	width: 100%;
 	max-width: none;
-	/* Remove max-width constraint */
 }
 
 /* Empty State */
@@ -117,12 +115,14 @@
 
 /* Responsive Design */
 @media (max-width: 1400px) {
+
 	.blogsGrid {
 		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 	}
 }
 
 @media (max-width: 1200px) {
+
 	.blogsGrid {
 		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 		gap: 1.5rem;
@@ -138,6 +138,12 @@
 }
 
 @media (max-width: 768px) {
+
+
+	.DivContainer {
+		margin-left: 0;
+	}
+
 	.heroTitle {
 		font-size: 2.5rem;
 	}
@@ -162,9 +168,17 @@
 	.hero {
 		padding: 2rem 1rem 1.5rem;
 	}
+
+	.DivContainer {
+		padding: 0;
+	}
 }
 
-@media (max-width: 480px) {
+@media (max-width: 360px) {
+	.DivContainer {
+		margin: 0;
+	}
+
 	.heroTitle {
 		font-size: 2rem;
 	}

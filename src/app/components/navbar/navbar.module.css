@@ -45,7 +45,7 @@
 	position: relative;
 	display: flex;
 	align-items: center;
-	background: #f8f9fa;
+	background: white;
 	border-radius: 25px;
 	border: 2px solid transparent;
 	transition: all 0.3s ease;
@@ -53,7 +53,7 @@
 
 .searchContainer:focus-within {
 	border-color: #154D71;
-	background: white;
+	background: #f0f7ff;
 	box-shadow: 0 4px 12px rgba(21, 77, 113, 0.1);
 }
 
