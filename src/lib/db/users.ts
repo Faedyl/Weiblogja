@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand, PutCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, PutCommand, ScanCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import bcrypt from "bcryptjs";
 
 const client = new DynamoDBClient({
@@ -19,39 +19,101 @@ export interface User {
 	password: string;
 	createdAt: string;
 	updatedAt: string;
+	role?: string;
+	avatar?: string;
+	bio?: string;
 }
 
 export async function createUser(email: string, name: string, password: string): Promise<User> {
-	const hashedPassword = await bcrypt.hash(password, 10);
+	const hashedPassword = await bcrypt.hash(password, 12);
+	const now = new Date().toISOString();
 
 	const user: User = {
 		email,
 		name,
 		password: hashedPassword,
-		createdAt: new Date().toISOString(),
-		updatedAt: new Date().toISOString(),
+		createdAt: now,
+		updatedAt: now,
+		role: "user",
 	};
 
-	await docClient.send(
-		new PutCommand({
-			TableName: TABLE_NAME,
-			Item: user,
-			ConditionExpression: "attribute_not_exists(email)", // Prevent duplicate emails
-		})
-	);
+	const command = new PutCommand({
+		TableName: TABLE_NAME,
+		Item: {
+			PK: `USER#${email}`,
+			SK: `PROFILE#${email}`,
+			GSI1PK: "USER",
+			GSI1SK: now,
+			...user,
+		},
+		ConditionExpression: "attribute_not_exists(PK)",
+	});
 
-	return user;
+	try {
+		await docClient.send(command);
+		return user;
+	} catch (error: any) {
+		if (error.name === "ConditionalCheckFailedException") {
+			throw new Error("User already exists");
+		}
+		throw error;
+	}
 }
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-	const result = await docClient.send(
-		new GetCommand({
-			TableName: TABLE_NAME,
-			Key: { email },
-		})
-	);
+	const command = new GetCommand({
+		TableName: TABLE_NAME,
+		Key: {
+			PK: `USER#${email}`,
+			SK: `PROFILE#${email}`,
+		},
+	});
 
-	return result.Item as User | null;
+	try {
+		const result = await docClient.send(command);
+		if (!result.Item) {
+			return null;
+		}
+
+		return {
+			email: result.Item.email,
+			name: result.Item.name,
+			password: result.Item.password,
+			createdAt: result.Item.createdAt,
+			updatedAt: result.Item.updatedAt,
+			role: result.Item.role,
+			avatar: result.Item.avatar,
+			bio: result.Item.bio,
+		};
+	} catch (error) {
+		console.error("Error getting user:", error);
+		return null;
+	}
+}
+
+export async function updateUser(email: string, updates: Partial<User>): Promise<User | null> {
+	const now = new Date().toISOString();
+
+	const command = new PutCommand({
+		TableName: TABLE_NAME,
+		Item: {
+			PK: `USER#${email}`,
+			SK: `PROFILE#${email}`,
+			GSI1PK: "USER",
+			GSI1SK: updates.createdAt || now,
+			...updates,
+			email,
+			updatedAt: now,
+		},
+	});
+
+	try {
+		await docClient.send(command);
+		return await getUserByEmail(email);
+	} catch (error) {
+		console.error("Error updating user:", error);
+		return null;
+	}
 }
 
 export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
@@ -59,11 +121,29 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 }
 
 export async function getAllUsers(): Promise<User[]> {
-	const result = await docClient.send(
-		new ScanCommand({
-			TableName: TABLE_NAME,
-		})
-	);
+	const command = new QueryCommand({
+		TableName: TABLE_NAME,
+		IndexName: "GSI1",
+		KeyConditionExpression: "GSI1PK = :pk",
+		ExpressionAttributeValues: {
+			":pk": "USER",
+		},
+	});
 
-	return (result.Items as User[]) || [];
+	try {
+		const result = await docClient.send(command);
+		return result.Items?.map(item => ({
+			email: item.email,
+			name: item.name,
+			password: item.password,
+			createdAt: item.createdAt,
+			updatedAt: item.updatedAt,
+			role: item.role,
+			avatar: item.avatar,
+			bio: item.bio,
+		})) || [];
+	} catch (error) {
+		console.error("Error getting all users:", error);
+		return [];
+	}
 }
