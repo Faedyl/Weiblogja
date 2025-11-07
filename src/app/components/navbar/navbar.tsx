@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Search, Menu, X, PlusCircle, User, Home, LibraryBig } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import styles from './navbar.module.css'
+import SearchBar from '@/app/components/searchbar/searchbar'
 
 export default function Navbar() {
 	const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -12,12 +13,8 @@ export default function Navbar() {
 	const pathname = usePathname()
 	const router = useRouter()
 
-	const handleSearch = (e: React.FormEvent) => {
-		e.preventDefault()
-		if (searchQuery.trim()) {
-			// Navigate to search results page or filter current page
-			router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
-		}
+	const handleSearchResultClick = (blog: any) => {
+		router.push(`/blog/${blog.slug}`)
 	}
 
 	const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
@@ -32,18 +29,10 @@ export default function Navbar() {
 				</Link>
 
 				{/* Search Bar - Desktop */}
-				<form onSubmit={handleSearch} className={styles.searchForm}>
-					<div className={styles.searchContainer}>
-						<Search size={20} className={styles.searchIcon} />
-						<input
-							type="text"
-							placeholder="Search blogs, topics, authors..."
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							className={styles.searchInput}
-						/>
-					</div>
-				</form>
+				<SearchBar
+					onResultClick={handleSearchResultClick}
+					className={styles.searchForm}
+				/>
 
 				{/* Mobile Menu Button */}
 				<button
@@ -59,19 +48,11 @@ export default function Navbar() {
 			{isMenuOpen && (
 				<div className={styles.mobileMenu}>
 					{/* Mobile Search */}
-					<form onSubmit={handleSearch} className={styles.mobileSearchForm}>
-						<div className={styles.mobileSearchContainer}>
-							<Search size={18} className={styles.searchIcon} />
-							<input
-								type="text"
-								placeholder="Search blogs..."
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								className={styles.mobileSearchInput}
-							/>
-						</div>
-					</form>
-
+					<SearchBar
+						onResultClick={handleSearchResultClick}
+						className={styles.mobileSearchForm}
+						maxResults={4}
+					/>
 					{/* Mobile Links */}
 					<div className={styles.mobileNavLinks}>
 						<Link
