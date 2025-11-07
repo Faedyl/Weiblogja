@@ -1,101 +1,239 @@
 'use client'
-import { useState } from 'react'
-import { Search, Filter, X } from 'lucide-react'
+import { Search, X, Loader2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
 import styles from './searchbar.module.css'
-
+import { BlogPost } from '@/lib/dynamodb'
 interface SearchBarProps {
-	onSearch?: (query: string, category?: string) => void
 	placeholder?: string
+	showResults?: boolean
+	maxResults?: number
+	onResultClick?: (blog: BlogPost) => void
+	className?: string
 }
 
-export default function SearchBar({ onSearch, placeholder = "Search articles..." }: SearchBarProps) {
+interface SearchResponse {
+	blogs: BlogPost[]
+	total: number
+}
+
+export default function SearchBar({
+	placeholder = "Search blogs, topics, authors...",
+	showResults = true,
+	maxResults = 6,
+	onResultClick,
+	className = ""
+}: SearchBarProps) {
 	const [query, setQuery] = useState('')
-	const [category, setCategory] = useState('')
-	const [showFilters, setShowFilters] = useState(false)
+	const [results, setResults] = useState<BlogPost[]>([])
+	const [loading, setLoading] = useState(false)
+	const [showDropdown, setShowDropdown] = useState(false)
+	const [total, setTotal] = useState(0)
 
-	const categories = [
-		'All Categories',
-		'Technology',
-		'Science',
-		'Health',
-		'Business',
-		'Education',
-		'Research'
-	]
+	const searchRef = useRef<HTMLDivElement>(null)
+	const debounceRef = useRef<NodeJS.Timeout>()
 
-	const handleSearch = (e: React.FormEvent) => {
-		e.preventDefault()
-		if (onSearch) {
-			onSearch(query, category)
+	// Close dropdown when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+				setShowDropdown(false)
+			}
 		}
-		console.log('Searching for:', query, 'in category:', category)
+
+		document.addEventListener('mousedown', handleClickOutside)
+		return () => document.removeEventListener('mousedown', handleClickOutside)
+	}, [])
+
+	// Debounced search
+	useEffect(() => {
+		if (debounceRef.current) {
+			clearTimeout(debounceRef.current)
+		}
+
+		if (query.trim().length === 0) {
+			setResults([])
+			setShowDropdown(false)
+			return
+		}
+
+		debounceRef.current = setTimeout(() => {
+			performSearch(query.trim())
+		}, 300)
+
+		return () => {
+			if (debounceRef.current) {
+				clearTimeout(debounceRef.current)
+			}
+		}
+	}, [query])
+
+	const performSearch = async (searchQuery: string) => {
+		if (!searchQuery.trim()) return
+
+		setLoading(true)
+		try {
+			const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&limit=${maxResults}`)
+			if (!response.ok) throw new Error('Search failed')
+
+			const data: SearchResponse = await response.json()
+			setResults(data.blogs)
+			setTotal(data.total || 0)
+			if (showResults) {
+				setShowDropdown(true)
+			}
+		} catch (error) {
+			console.error('Search error:', error)
+			setResults([])
+		} finally {
+			setLoading(false)
+		}
 	}
 
-	const clearSearch = () => {
+	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setQuery(e.target.value)
+	}
+
+	const handleClear = () => {
 		setQuery('')
-		setCategory('')
-		if (onSearch) {
-			onSearch('', '')
+		setResults([])
+		setShowDropdown(false)
+	}
+
+	const handleResultClick = (blog: BlogPost) => {
+		setShowDropdown(false)
+		setQuery('')
+		if (onResultClick) {
+			onResultClick(blog)
+		}
+	}
+
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === 'Escape') {
+			setShowDropdown(false)
 		}
 	}
 
 	return (
-		<div className={styles.searchContainer}>
-			{/* Main Search Form */}
-			<form onSubmit={handleSearch} className={styles.searchForm}>
-				<div className={styles.searchInputWrapper}>
-					<Search className={styles.searchIcon} size={20} />
-					<input
-						type="text"
-						value={query}
-						onChange={(e) => setQuery(e.target.value)}
-						placeholder={placeholder}
-						className={styles.searchInput}
-					/>
-					{query && (
-						<button
-							type="button"
-							onClick={clearSearch}
-							className={styles.clearButton}
-						>
-							<X size={16} />
-						</button>
-					)}
-				</div>
-
-				<button
-					type="button"
-					onClick={() => setShowFilters(!showFilters)}
-					className={styles.filterToggle}
-				>
-					<Filter size={20} />
-				</button>
-
-				<button type="submit" className={styles.searchButton}>
-					Search
-				</button>
-			</form>
-
-			{/* Advanced Filters */}
-			{showFilters && (
-				<div className={styles.filtersContainer}>
-					<div className={styles.filterGroup}>
-						<label htmlFor="category">Category:</label>
-						<select
-							id="category"
-							value={category}
-							onChange={(e) => setCategory(e.target.value)}
-							className={styles.categorySelect}
-						>
-							{categories.map((cat) => (
-								<option key={cat} value={cat === 'All Categories' ? '' : cat}>
-									{cat}
-								</option>
-							))}
-						</select>
+		<div className={`${styles.searchContainer} ${className}`} ref={searchRef}>
+			<div className={styles.searchInputContainer}>
+				<Search size={20} className={styles.searchIcon} />
+				<input
+					type="text"
+					placeholder={placeholder}
+					value={query}
+					onChange={handleInputChange}
+					onKeyDown={handleKeyDown}
+					onFocus={() => query.trim() && showResults && setShowDropdown(true)}
+					className={styles.searchInput}
+				/>
+				{query && (
+					<button
+						onClick={handleClear}
+						className={styles.clearButton}
+						aria-label="Clear search"
+					>
+						<X size={16} />
+					</button>
+				)}
+				{loading && (
+					<div className={styles.loadingIcon}>
+						<Loader2 size={16} className={styles.spinner} />
 					</div>
+				)}
+			</div>
+
+			{/* Search Results Dropdown */}
+			{showDropdown && showResults && (
+				<div className={styles.searchDropdown}>
+					{results.length > 0 ? (
+						<>
+							<div className={styles.searchHeader}>
+								<span className={styles.resultsCount}>
+									{total > maxResults ? `${maxResults} of ${total}` : total} result{total !== 1 ? 's' : ''}
+								</span>
+								{total > maxResults && (
+									<span className={styles.seeMore}>
+										Showing top {maxResults} results
+									</span>
+								)}
+							</div>
+
+							<div className={styles.searchResults}>
+								{results.map((blog) => (
+									<div
+										key={blog.PK}
+										className={styles.searchResultItem}
+										onClick={() => handleResultClick(blog)}
+									>
+										<SearchResultCard blog={blog} query={query} />
+									</div>
+								))}
+							</div>
+
+							{total > maxResults && (
+								<div className={styles.searchFooter}>
+									<button
+										className={styles.viewAllButton}
+										onClick={() => window.location.href = `/search?q=${encodeURIComponent(query)}`}
+									>
+										View all {total} results
+									</button>
+								</div>
+							)}
+						</>
+					) : !loading && query.trim() ? (
+						<div className={styles.noResults}>
+							<Search size={24} />
+							<p>No results found for "{query}"</p>
+							<span>Try different keywords</span>
+						</div>
+					) : null}
 				</div>
 			)}
+		</div>
+	)
+}
+
+// Compact search result card for dropdown
+function SearchResultCard({ blog, query }: { blog: BlogPost; query: string }) {
+	const highlightText = (text: string, query: string) => {
+		if (!query.trim()) return text
+
+		const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+		const parts = text.split(regex)
+
+		return parts.map((part, index) =>
+			regex.test(part) ? (
+				<mark key={index} className={styles.highlight}>{part}</mark>
+			) : part
+		)
+	}
+
+	const formatDate = (dateString: string) => {
+		return new Date(dateString).toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		})
+	}
+
+	return (
+		<div className={styles.resultCard}>
+			<div className={styles.resultContent}>
+				<h4 className={styles.resultTitle}>
+					{highlightText(blog.title, query)}
+				</h4>
+				<p className={styles.resultPreview}>
+					{highlightText(blog.content.substring(0, 120) + '...', query)}
+				</p>
+				<div className={styles.resultMeta}>
+					<span className={styles.resultAuthor}>{blog.author_id}</span>
+					<span className={styles.resultDate}>{formatDate(blog.created_at)}</span>
+					{blog.category && (
+						<span className={styles.resultCategory}>{blog.category}</span>
+					)}
+				</div>
+			</div>
 		</div>
 	)
 }
