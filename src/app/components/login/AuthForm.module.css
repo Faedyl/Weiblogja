@@ -1,15 +1,11 @@
 .container {
-	min-height: 100vh;
 	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	padding: 1rem;
 }
 
 .formCard {
-	width: 100%;
-	max-width: 28rem;
+	display: flex;
+	flex-direction: column;
+	margin: 4rem;
 	background: white;
 	border-radius: 1.5rem;
 	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -17,20 +13,10 @@
 }
 
 .header {
-	text-align: center;
 	margin-bottom: 2rem;
 }
 
-.iconContainer {
-	margin: 0 auto 1rem;
-	width: 4rem;
-	height: 4rem;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	border-radius: 50%;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
+
 
 .icon {
 	font-size: 2rem;
@@ -63,6 +49,8 @@
 }
 
 .form {
+	max-width: 30rem;
+	width: 100%;
 	display: flex;
 	flex-direction: column;
 	gap: 1.5rem;
@@ -118,8 +106,8 @@
 }
 
 .submitButton {
+	background-color: #154d71;
 	width: 100%;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	color: white;
 	padding: 0.75rem 1rem;
 	border-radius: 0.5rem;

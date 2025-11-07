@@ -59,13 +59,8 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
 		<div className={pageStyle.DivContainer}>
 			<div className={styles.formCard}>
 				<div className={styles.header}>
-					<div className={styles.iconContainer}>
-						<div className={styles.icon}>
-							{isLogin ? "🔐" : "👤"}
-						</div>
-					</div>
 					<h1 className={styles.title}>
-						{isLogin ? "Welcome Back" : "Create Account"}
+						{isLogin ? "Sign In" : "Create Account"}
 					</h1>
 					<p className={styles.subtitle}>
 						{isLogin
@@ -80,73 +75,75 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
 						<p className={styles.errorText}>{error}</p>
 					</div>
 				)}
+				<div className={styles.container}>
+					<form onSubmit={handleSubmit} className={styles.form}>
+						{!isLogin && (
+							<div className={styles.inputGroup}>
+								<div className={styles.inputContainer}>
+									<span className={styles.inputIcon}>👤</span>
+									<input
+										type="text"
+										placeholder="Full Name"
+										value={formData.name}
+										onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+										className={styles.input}
+										required={!isLogin}
+									/>
+								</div>
+							</div>
+						)}
 
-				<form onSubmit={handleSubmit} className={styles.form}>
-					{!isLogin && (
 						<div className={styles.inputGroup}>
 							<div className={styles.inputContainer}>
-								<span className={styles.inputIcon}>👤</span>
+								<span className={styles.inputIcon}>📧</span>
 								<input
-									type="text"
-									placeholder="Full Name"
-									value={formData.name}
-									onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+									type="email"
+									placeholder="Email Address"
+									value={formData.email}
+									onChange={(e) => setFormData({ ...formData, email: e.target.value })}
 									className={styles.input}
-									required={!isLogin}
+									required
 								/>
 							</div>
 						</div>
-					)}
 
-					<div className={styles.inputGroup}>
-						<div className={styles.inputContainer}>
-							<span className={styles.inputIcon}>📧</span>
-							<input
-								type="email"
-								placeholder="Email Address"
-								value={formData.email}
-								onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-								className={styles.input}
-								required
-							/>
+						<div className={styles.inputGroup}>
+							<div className={styles.inputContainer}>
+								<span className={styles.inputIcon}>🔒</span>
+								<input
+									type={showPassword ? "text" : "password"}
+									placeholder="Password"
+									value={formData.password}
+									onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+									className={styles.input}
+									required
+								/>
+								<button
+									type="button"
+									onClick={() => setShowPassword(!showPassword)}
+									className={styles.passwordToggle}
+								>
+									{showPassword ? "👁️" : "🙈"}
+								</button>
+							</div>
 						</div>
-					</div>
 
-					<div className={styles.inputGroup}>
-						<div className={styles.inputContainer}>
-							<span className={styles.inputIcon}>🔒</span>
-							<input
-								type={showPassword ? "text" : "password"}
-								placeholder="Password"
-								value={formData.password}
-								onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-								className={styles.input}
-								required
-							/>
-							<button
-								type="button"
-								onClick={() => setShowPassword(!showPassword)}
-								className={styles.passwordToggle}
-							>
-								{showPassword ? "👁️" : "🙈"}
-							</button>
-						</div>
-					</div>
+						<button
+							type="submit"
+							disabled={isLoading}
+							className={`${styles.submitButton} ${isLoading ? styles.loading : ""}`}
+						>
+							{isLoading ? (
+								<div className={styles.spinner}></div>
+							) : (
+								<>
+									{isLogin ? "🔐 Sign In" : "👤 Create Account"}
+								</>
+							)}
+						</button>
+					</form>
 
-					<button
-						type="submit"
-						disabled={isLoading}
-						className={`${styles.submitButton} ${isLoading ? styles.loading : ""}`}
-					>
-						{isLoading ? (
-							<div className={styles.spinner}></div>
-						) : (
-							<>
-								{isLogin ? "🔐 Sign In" : "👤 Create Account"}
-							</>
-						)}
-					</button>
-				</form>
+				</div>
 
 				<div className={styles.footer}>
 					<p className={styles.footerText}>
