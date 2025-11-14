@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import styles from "./ProfileView.module.css";
+import pageStyles from "@/app/page.module.css"
 
 interface ProfileViewProps {
 	user: {
