@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import AuthForm from "@/app/components/login/AuthForm";
 import ProfileView from "@/app/components/profile/ProfileView";
+import styles from "@/app/page.module.css"
 export default async function ProfilePage() {
 	const user = await getCurrentUser();
 
@@ -10,5 +11,10 @@ export default async function ProfilePage() {
 	}
 
 	// Show actual profile
-	return <ProfileView user={user} />;
+	return (
+		<div className={styles.DivContainer}>
+			<ProfileView user={user} />
+
+		</div>
+	)
 }
