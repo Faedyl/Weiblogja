@@ -1,0 +1,303 @@
+.container {
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 2rem;
+	background: #ffffff;
+	min-height: calc(100vh - 70px);
+}
+
+.header {
+	margin-bottom: 2rem;
+	border-bottom: 2px solid #154D71;
+	padding-bottom: 1rem;
+}
+
+.header h1 {
+	color: #154D71;
+	font-size: 2rem;
+	margin: 0 0 0.5rem 0;
+}
+
+.subtitle {
+	color: #666;
+	font-size: 1rem;
+	margin: 0;
+}
+
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+
+.formGroup {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.formGroup label {
+	font-weight: 600;
+	color: #333;
+	font-size: 1rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.required {
+	color: #e74c3c;
+}
+
+.input,
+.textarea {
+	padding: 0.75rem;
+	border: 2px solid #e0e0e0;
+	border-radius: 8px;
+	font-size: 1rem;
+	font-family: inherit;
+	transition: all 0.3s ease;
+}
+
+.input:focus,
+.textarea:focus {
+	outline: none;
+	border-color: #154D71;
+	box-shadow: 0 0 0 3px rgba(21, 77, 113, 0.1);
+}
+
+.textarea {
+	resize: vertical;
+	min-height: 300px;
+	line-height: 1.6;
+}
+
+.hint {
+	color: #666;
+	font-size: 0.875rem;
+	font-style: italic;
+}
+
+.imageSection {
+	background: #f8f9fa;
+	padding: 1.5rem;
+	border-radius: 12px;
+	border: 2px dashed #dee2e6;
+}
+
+.imageSection h3 {
+	margin: 0 0 1rem 0;
+	color: #154D71;
+	font-size: 1.25rem;
+}
+
+.fileInput {
+	padding: 0.5rem;
+	border: 2px solid #e0e0e0;
+	border-radius: 8px;
+	background: white;
+	cursor: pointer;
+	font-size: 0.9rem;
+}
+
+.fileInput:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.thumbnailPreview {
+	position: relative;
+	margin-top: 1rem;
+	border-radius: 8px;
+	overflow: hidden;
+	max-width: 400px;
+}
+
+.thumbnailPreview img {
+	width: 100%;
+	height: auto;
+	display: block;
+	border-radius: 8px;
+}
+
+.imageList {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	margin-top: 1rem;
+}
+
+.imageItem {
+	display: flex;
+	gap: 1rem;
+	padding: 1rem;
+	background: white;
+	border-radius: 8px;
+	border: 1px solid #dee2e6;
+}
+
+.imageItem img {
+	width: 120px;
+	height: 80px;
+	object-fit: cover;
+	border-radius: 6px;
+}
+
+.imageInfo {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.imageInfo span {
+	color: #666;
+	font-size: 0.9rem;
+}
+
+.removeBtn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.5rem 1rem;
+	background: #e74c3c;
+	color: white;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 0.875rem;
+	transition: background 0.3s ease;
+	align-self: flex-start;
+}
+
+.removeBtn:hover {
+	background: #c0392b;
+}
+
+.actions {
+	display: flex;
+	gap: 1rem;
+	margin-top: 2rem;
+	padding-top: 2rem;
+	border-top: 2px solid #e0e0e0;
+}
+
+.btnSubmit,
+.btnCancel {
+	padding: 1rem 2rem;
+	font-size: 1rem;
+	font-weight: 600;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	border: none;
+}
+
+.btnSubmit {
+	background: #154D71;
+	color: white;
+	flex: 1;
+}
+
+.btnSubmit:hover:not(:disabled) {
+	background: #0f3a54;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(21, 77, 113, 0.3);
+}
+
+.btnSubmit:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.btnCancel {
+	background: #6c757d;
+	color: white;
+}
+
+.btnCancel:hover:not(:disabled) {
+	background: #5a6268;
+}
+
+.uploadOverlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.7);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 9999;
+}
+
+.uploadSpinner {
+	background: white;
+	padding: 2rem 3rem;
+	border-radius: 12px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1rem;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.uploadSpinner svg {
+	color: #154D71;
+	animation: pulse 1.5s ease-in-out infinite;
+}
+
+.uploadSpinner p {
+	margin: 0;
+	font-weight: 600;
+	color: #154D71;
+}
+
+@keyframes pulse {
+
+	0%,
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	50% {
+		opacity: 0.5;
+		transform: scale(0.95);
+	}
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+	.container {
+		padding: 1rem;
+		margin-bottom: 80px;
+		/* Account for mobile bottom navigation */
+	}
+
+	.header h1 {
+		font-size: 1.5rem;
+	}
+
+	.actions {
+		flex-direction: column;
+	}
+
+	.btnSubmit,
+	.btnCancel {
+		width: 100%;
+	}
+
+	.imageItem {
+		flex-direction: column;
+	}
+
+	.imageItem img {
+		width: 100%;
+		height: auto;
+	}
+}
