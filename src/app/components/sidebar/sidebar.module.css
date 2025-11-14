@@ -1,8 +1,7 @@
 .sidebarContainer {
 	padding: 1.9em;
 	height: 100vh;
-	width: 280px;
-	min-width: 280px;
+	width: 45wh;
 	flex-shrink: 0;
 	top: 70px;
 	background-color: #ffffff;
