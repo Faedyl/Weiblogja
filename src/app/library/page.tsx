@@ -1,43 +1,167 @@
 'use client'
-import { useState } from 'react'
-import SearchBar from '../components/searchbar/searchbar'
-import styles from '../page.module.css'
+
+import { useState, useEffect } from 'react'
+import { Search, Loader2, Filter } from 'lucide-react'
+import BlogCard from '../components/blogcard/blogcard'
+import { BlogPost } from '@/lib/dynamodb'
+import styles from './library.module.css'
 
 export default function Library() {
-	const [searchResults, setSearchResults] = useState([])
-	const [isLoading, setIsLoading] = useState(false)
+        const [allBlogs, setAllBlogs] = useState<BlogPost[]>([])
+        const [filteredBlogs, setFilteredBlogs] = useState<BlogPost[]>([])
+        const [searchQuery, setSearchQuery] = useState('')
+        const [selectedCategory, setSelectedCategory] = useState<string>('all')
+        const [categories, setCategories] = useState<string[]>([])
+        const [loading, setLoading] = useState(true)
+        const [searching, setSearching] = useState(false)
 
+        useEffect(() => {
+                fetchAllBlogs()
+        }, [])
 
-	const handleSearch = async (query: string, category?: string) => {
-		setIsLoading(true)
-		console.log('Search query:', query)
-		console.log('Category:', category)
-		// Add your search logic here
-		// e.g., fetch articles from API, filter results, etc.
-		try {
-			setTimeout(() => {
-				setSearchResults([])
-				setIsLoading(false)
-			}, 1000)
-		} catch (error) {
-			console.error('Search error:', error)
-			setIsLoading(false)
-		}
-	}
+        useEffect(() => {
+                filterBlogs()
+        }, [searchQuery, selectedCategory, allBlogs])
 
-	return (
-		<div className={styles.DivContainer}>
-			<div className={styles.header}>
-				<h1>Article Library</h1>
-				<p>Search and discover articles from our collection</p>
-			</div>
+        const fetchAllBlogs = async () => {
+                setLoading(true)
+                try {
+                        const response = await fetch('/api/blogs/all')
+                        if (response.ok) {
+                                const data = await response.json()
+                                setAllBlogs(data.blogs || [])
 
-			<SearchBar onSearch={handleSearch} />
+                                // Extract unique categories
+                                const uniqueCategories = Array.from(
+                                        new Set(data.blogs.map((blog: BlogPost) => blog.category).filter(Boolean))
+                                ) as string[]
+                                setCategories(uniqueCategories)
+                        }
+                } catch (error) {
+                        console.error('Error fetching blogs:', error)
+                } finally {
+                        setLoading(false)
+                }
+        }
 
-			<div className={styles.resultsContainer}>
-				{/* Your article results will go here */}
-				<p>Search results will appear here...</p>
-			</div>
-		</div>
-	)
+        const filterBlogs = () => {
+                setSearching(true)
+                let results = [...allBlogs]
+
+                // Filter by category
+                if (selectedCategory !== 'all') {
+                        results = results.filter(blog => blog.category === selectedCategory)
+                }
+
+                // Filter by search query
+                if (searchQuery.trim()) {
+                        const query = searchQuery.toLowerCase()
+                        results = results.filter(blog =>
+                                blog.title.toLowerCase().includes(query) ||
+                                blog.content.toLowerCase().includes(query) ||
+                                blog.author_id.toLowerCase().includes(query) ||
+                                (blog.category && blog.category.toLowerCase().includes(query))
+                        )
+                }
+
+                setFilteredBlogs(results)
+                setSearching(false)
+        }
+
+        const handleCategoryChange = (category: string) => {
+                setSelectedCategory(category)
+        }
+
+        return (
+                <div className={styles.container}>
+                        <header className={styles.header}>
+                                <h1>Blog Library</h1>
+                                <p>Discover and explore all available blog posts</p>
+                        </header>
+
+                        <div className={styles.searchSection}>
+                                <div className={styles.searchBar}>
+                                        <Search size={20} className={styles.searchIcon} />
+                                        <input
+                                                type="text"
+                                                placeholder="Search by title, content, author, or category..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className={styles.searchInput}
+                                        />
+                                        {searching && <Loader2 size={20} className={styles.loadingIcon} />}
+                                </div>
+
+                                <div className={styles.filterSection}>
+                                        <Filter size={18} />
+                                        <span className={styles.filterLabel}>Category:</span>
+                                        <div className={styles.categoryButtons}>
+                                                <button
+                                                        className={selectedCategory === 'all' ? styles.categoryActive : styles.categoryBtn}
+                                                        onClick={() => handleCategoryChange('all')}
+                                                >
+                                                        All ({allBlogs.length})
+                                                </button>
+                                                {categories.map(category => (
+                                                        <button
+                                                                key={category}
+                                                                className={selectedCategory === category ? styles.categoryActive : styles.categoryBtn}
+                                                                onClick={() => handleCategoryChange(category)}
+                                                        >
+                                                                {category} ({allBlogs.filter(b => b.category === category).length})
+                                                        </button>
+                                                ))}
+                                        </div>
+                                </div>
+                        </div>
+
+                        <div className={styles.resultsSection}>
+                                {loading ? (
+                                        <div className={styles.loadingState}>
+                                                <Loader2 size={40} className={styles.spinner} />
+                                                <p>Loading blogs...</p>
+                                        </div>
+                                ) : filteredBlogs.length > 0 ? (
+                                        <>
+                                                <div className={styles.resultsHeader}>
+                                                        <h2>
+                                                                {searchQuery || selectedCategory !== 'all'
+                                                                        ? `Found ${filteredBlogs.length} result${filteredBlogs.length !== 1 ? 's' : ''}`
+                                                                        : `All Blog Posts (${filteredBlogs.length})`
+                                                                }
+                                                        </h2>
+                                                </div>
+                                                <div className={styles.blogsGrid}>
+                                                        {filteredBlogs.map((blog) => (
+                                                                <BlogCard key={blog.PK} blog={blog} />
+                                                        ))}
+                                                </div>
+                                        </>
+                                ) : (
+                                        <div className={styles.emptyState}>
+                                                <Search size={60} />
+                                                <h3>No blogs found</h3>
+                                                <p>
+                                                        {searchQuery
+                                                                ? `No results for "${searchQuery}"`
+                                                                : selectedCategory !== 'all'
+                                                                        ? `No blogs in category "${selectedCategory}"`
+                                                                        : 'No blogs available yet'}
+                                                </p>
+                                                {(searchQuery || selectedCategory !== 'all') && (
+                                                        <button
+                                                                onClick={() => {
+                                                                        setSearchQuery('')
+                                                                        setSelectedCategory('all')
+                                                                }}
+                                                                className={styles.clearBtn}
+                                                        >
+                                                                Clear filters
+                                                        </button>
+                                                )}
+                                        </div>
+                                )}
+                        </div>
+                </div>
+        )
 }
