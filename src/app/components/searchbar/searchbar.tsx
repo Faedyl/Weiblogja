@@ -17,7 +17,7 @@ interface SearchResponse {
 }
 
 export default function SearchBar({
-	placeholder = "Search blogs, topics, authors...",
+	placeholder = "Search",
 	showResults = true,
 	maxResults = 6,
 	onResultClick,
@@ -127,13 +127,14 @@ export default function SearchBar({
 					className={styles.searchInput}
 				/>
 				{query && (
+
 					<button
 						onClick={handleClear}
 						className={styles.clearButton}
 						aria-label="Clear search"
 					>
-						<X size={16} />
 					</button>
+
 				)}
 				{loading && (
 					<div className={styles.loadingIcon}>
