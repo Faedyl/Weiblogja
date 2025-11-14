@@ -37,7 +37,7 @@
 /* Search Form - Desktop */
 .searchForm {
 	flex: 1;
-	max-width: 300px;
+
 	margin: 0 2rem;
 }
 
@@ -49,6 +49,7 @@
 	border-radius: 25px;
 	border: 2px solid transparent;
 	transition: all 0.3s ease;
+	width: 20%;
 }
 
 .searchContainer:focus-within {
@@ -185,6 +186,30 @@
 .mobileNavLink:hover {
 	background: #f0f7ff;
 	color: #154D71;
+}
+
+.sidebarToggleButton {
+	background: white;
+	border: none;
+	cursor: pointer;
+	padding: 0.5rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #154D71;
+	transition: background-color 0.2s ease;
+	border-radius: 14px;
+}
+
+.sidebarToggleButton:hover {
+	background-color: #f0f7ff;
+}
+
+/* Hide on mobile */
+@media (max-width: 768px) {
+	.sidebarToggleButton {
+		display: none;
+	}
 }
 
 .mobileNavLink.active {
