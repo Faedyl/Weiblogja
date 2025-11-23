@@ -6,6 +6,11 @@
 	min-height: 100%;
 	display: flex;
 	flex-direction: column;
+	transition: margin-left 0.3s ease;
+}
+
+:global(.sidebar-collapsed) .DivContainer {
+	margin-left: 100px;
 }
 
 /* Debug info styling */

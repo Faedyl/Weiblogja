@@ -1,5 +1,5 @@
 import { getRecentBlogs } from '@/lib/dynamodb'
-import BlogCard from './components/blogcard/blogcard'
+import InfiniteScroll from './components/InfiniteScroll/InfiniteScroll'
 import styles from './page.module.css'
 import { Metadata } from 'next'
 
@@ -29,11 +29,7 @@ export default async function Home() {
 				</div>
 
 				{recentBlogs.length > 0 ? (
-					<div className={styles.blogsGrid}>
-						{recentBlogs.map((blog) => (
-							<BlogCard key={blog.PK} blog={blog} />
-						))}
-					</div>
+					<InfiniteScroll initialBlogs={recentBlogs} />
 				) : (
 					<div className={styles.emptyState}>
 						<div className={styles.emptyStateContent}>
