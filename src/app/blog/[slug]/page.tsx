@@ -1,7 +1,7 @@
 import { getBlogBySlug } from '@/lib/dynamodb'
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
-import { Calendar, User, Eye } from 'lucide-react'
+import { Calendar, User, Eye, Bot } from 'lucide-react'
 import Link from 'next/link'
 import BlogContent from '@/app/components/blogcontent/blogContent'  // ← Add this import
 import styles from './blog.module.css'
@@ -93,7 +93,8 @@ export default async function BlogPage({ params }: BlogPageProps) {
 
 					{blog.ai_generated && (
 						<div className={styles.aiTag}>
-							🤖 AI Generated Content
+							<Bot size={18} />
+					AI Generated Content
 						</div>
 					)}
 				</header>
