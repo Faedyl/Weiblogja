@@ -8,6 +8,20 @@
 	box-shadow: 2px 0 0px rgba(0, 0, 0, 0.1);
 	position: fixed;
 	overflow-y: auto;
+	transition: width 0.3s ease;
+}
+
+.sidebarContainer.collapsed {
+	width: 100px;
+	padding: 1.9em 0.5em;
+}
+
+.sidebarContainer.collapsed .linkText {
+	display: none;
+}
+
+.sidebarContainer.collapsed .sidebarItems a {
+	justify-content: center;
 }
 
 .sidebarItems ul {

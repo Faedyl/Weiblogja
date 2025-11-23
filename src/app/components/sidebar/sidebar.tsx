@@ -58,14 +58,11 @@ function Sidebar({ isCollapsed = false }: SidebarProps) {
                                                 </Link>
                                         </li>
 
-
-
-                                        {console.log('Should show Create?', !loading && isAuthenticated && isAuthor)}
                                         {!loading && isAuthenticated && isAuthor && (
                                                 <li className={pathname == '/create' ? styles.active : ''}>
                                                         <Link href="/create">
                                                                 <PlusCircle color='#154D71' size='28' />
-                                                                <span>Create</span>
+                                                                <span className={styles.linkText}>Create</span>
                                                         </Link>
                                                 </li>
                                         )}					<li className={pathname == '/profile' ? styles.active : ''}>
