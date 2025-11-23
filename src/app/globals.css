@@ -22,6 +22,12 @@ body {
 .main-content {
 	display: flex;
 	flex: 1;
+	transition: margin-left 0.3s ease;
+}
+
+.app-container {
+	display: flex;
+	width: 100%;
 }
 
 * {

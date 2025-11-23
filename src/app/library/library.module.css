@@ -2,7 +2,13 @@
 	max-width: 1400px;
 	margin: 0 auto;
 	padding: 2rem;
+	padding-left: calc(250px + 2rem);
 	min-height: calc(100vh - 70px);
+	transition: padding-left 0.3s ease;
+}
+
+:global(.sidebar-collapsed) .container {
+	padding-left: calc(100px + 2rem);
 }
 
 .header {
@@ -192,6 +198,7 @@
 @media (max-width: 768px) {
 	.container {
 		padding: 1rem;
+		padding-left: 1rem;
 		margin-bottom: 80px;
 	}
 
