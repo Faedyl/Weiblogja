@@ -2,6 +2,13 @@
 	min-height: 100vh;
 	background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 	padding: 2rem 1rem;
+	padding-left: calc(250px + 1rem);
+	transition: padding-left 0.3s ease;
+	border-radius: 2rem;
+}
+
+:global(.sidebar-collapsed) .container {
+	padding-left: calc(100px + 1rem);
 }
 
 .profileCard {
@@ -34,6 +41,9 @@
 	font-weight: 500;
 	transition: all 0.2s ease;
 	font-size: 0.875rem;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
 }
 
 .signOutButton:hover {
@@ -101,7 +111,6 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 1rem;
 }
 
 .cameraButton:hover {
@@ -142,6 +151,7 @@
 	transition: all 0.2s ease;
 	display: inline-flex;
 	align-items: center;
+	justify-content: center;
 	gap: 0.5rem;
 }
 
@@ -206,6 +216,10 @@
 	cursor: pointer;
 	font-weight: 500;
 	transition: all 0.2s ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
 }
 
 .saveButton:hover {
@@ -222,6 +236,10 @@
 	cursor: pointer;
 	font-weight: 500;
 	transition: all 0.2s ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
 }
 
 .cancelButton:hover {
@@ -249,8 +267,11 @@
 }
 
 .statIcon {
-	font-size: 2rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	margin-bottom: 0.5rem;
+	color: #154D71;
 }
 
 .statTitle {
@@ -265,6 +286,37 @@
 	font-size: 0.875rem;
 	margin: 0;
 	word-break: break-word;
+}
+
+.quickActions {
+	margin-bottom: 2rem;
+}
+
+.actionButtons {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 1rem;
+}
+
+.actionButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	background: #154D71;
+	color: white;
+	padding: 1rem 1.5rem;
+	border-radius: 0.75rem;
+	text-decoration: none;
+	font-weight: 600;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 12px rgba(21, 77, 113, 0.2);
+}
+
+.actionButton:hover {
+	background: #0f3a54;
+	transform: translateY(-2px);
+	box-shadow: 0 6px 16px rgba(21, 77, 113, 0.3);
 }
 
 .activitySection {
@@ -300,6 +352,7 @@
 @media (max-width: 768px) {
 	.container {
 		padding: 1rem 0.5rem;
+		padding-left: 0.5rem;
 	}
 
 	.content {
