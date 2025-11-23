@@ -1,6 +1,7 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { getUserByEmail, createUser, verifyPassword } from "@/lib/db/users"
+import { logger } from "@/lib/logger"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
         providers: [
@@ -38,7 +39,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                                                 credentials.password as string
                                         )
 
-                                        console.log('📝 New user registered:', { email: newUser.email, role: newUser.role })
+                                        logger.debug('📝 New user registered:', { email: newUser.email, role: newUser.role })
 
                                         return {
                                                 id: newUser.email,
@@ -60,7 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                                                 throw new Error("Invalid password")
                                         }
 
-                                        console.log('🔐 User logged in:', { email: user.email, role: user.role })
+                                        logger.debug('🔐 User logged in:', { email: user.email, role: user.role })
 
                                         return {
                                                 id: user.email,
@@ -86,7 +87,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                                 token.email = user.email
                                 token.name = user.name
                                 token.role = (user as any).role // Add role to JWT token
-                                console.log('🎫 JWT token created with role:', token.role)
+                                logger.debug('🎫 JWT token created with role:', token.role)
                         }
                         return token
                 },
@@ -96,7 +97,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                                 session.user.email = token.email as string
                                 session.user.name = token.name as string;
                                 (session.user as any).role = token.role
-                                console.log('✅ Session created with role:', (session.user as any).role)
+                                logger.debug('✅ Session created with role:', (session.user as any).role)
                         }
                         return session
                 },
