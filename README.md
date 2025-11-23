@@ -1,9 +1,49 @@
 ![alt text](https://github.com/Faedyl/Weiblogja/blob/main/docs/images/logo.webp?raw=true)
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# Weiblogja
 
-First, run the development server:
+A modern blog platform with AI-powered journal-to-blog conversion. Transform your academic journals and PDF documents into engaging blog posts automatically.
+
+## ✨ Key Features
+
+- 📝 **AI-Powered PDF Conversion**: Automatically convert journals and PDFs to blog posts
+- 🎨 **Intuitive Create Page**: Drag-and-drop interface with real-time preview
+- ✏️ **Inline Editing**: Edit titles, summaries, tags, and content seamlessly
+- 🏷️ **Smart Tagging**: AI-generated tags for better content organization
+- 📱 **Responsive Design**: Beautiful interface across all devices
+- 🔐 **User Authentication**: Secure login and user management
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+ installed
+- Google Gemini API key ([Get one here](https://ai.google.dev/))
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/Faedyl/Weiblogja.git
+cd Weiblogja
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` and add:
+```env
+GOOGLE_GEMINI_API_KEY=your_api_key_here
+# Add other required environment variables
+```
+
+4. Run the development server:
 
 ```bash
 npm run dev
@@ -15,20 +55,131 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📖 Documentation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [Journal to Blog Conversion Guide](./docs/JOURNAL_TO_BLOG.md) - Complete guide for PDF to blog conversion
+- [API Documentation](./docs/API.md) - API endpoints and usage
+- [Deployment Guide](./docs/DEPLOYMENT.md) - How to deploy to production
 
-## Learn More
+## 🎯 Usage
 
-To learn more about Next.js, take a look at the following resources:
+### Creating a Blog Post from PDF
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Navigate to the **Create** page
+2. **Upload your PDF**:
+   - Drag and drop your PDF file
+   - Or click "Browse Files" to select
+3. **Wait for AI conversion** (15-45 seconds)
+4. **Review and edit** the generated content
+5. **Publish** or save as draft
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+See the [detailed guide](./docs/JOURNAL_TO_BLOG.md) for more information.
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Next.js 15](https://nextjs.org) with App Router
+- **Language**: TypeScript
+- **AI**: Google Gemini API
+- **PDF Processing**: pdf-parse
+- **Styling**: CSS Modules
+- **Icons**: Lucide React
+- **Authentication**: NextAuth.js
+- **Database**: DynamoDB
+- **Storage**: AWS S3
+
+## 📁 Project Structure
+
+```
+src/
+├── app/                    # Next.js app directory
+│   ├── create/            # PDF to blog creation page
+│   ├── blog/              # Blog post pages
+│   ├── api/               # API routes
+│   └── components/        # React components
+├── services/              # Business logic services
+│   ├── pdf-extractor.ts   # PDF text extraction
+│   └── gemini-service.ts  # AI conversion service
+├── types/                 # TypeScript type definitions
+└── lib/                   # Utility functions
+```
+
+## 🎨 Features in Detail
+
+### AI-Powered Conversion
+- Extracts text and structure from PDFs
+- Transforms academic language to blog-friendly content
+- Generates engaging titles and summaries
+- Creates relevant tags automatically
+- Maintains factual accuracy
+
+### Enhanced Create Page
+- Modern drag-and-drop interface
+- Real-time file validation
+- Visual progress tracking
+- Inline content editing
+- Live preview mode
+- Tag management
+
+## 🔧 Configuration
+
+### Environment Variables
+
+```env
+# Required
+GOOGLE_GEMINI_API_KEY=your_gemini_api_key
+NEXTAUTH_SECRET=your_nextauth_secret
+NEXTAUTH_URL=http://localhost:3000
+
+# AWS (if using)
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_REGION=your_region
+```
+
+## 🚦 Development
+
+Run the development server with hot reload:
+
+Run linting:
+```bash
+npm run lint
+```
+
+Build for production:
+```bash
+npm run build
+```
+
+## 📝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 🐛 Troubleshooting
+
+**PDF conversion fails:**
+- Ensure your Gemini API key is valid
+- Check if the PDF is password-protected (not supported)
+- Verify the PDF contains readable text
+
+**Upload size limit:**
+- Maximum file size is 50MB
+- Compress large PDFs before uploading
+
+See [JOURNAL_TO_BLOG.md](./docs/JOURNAL_TO_BLOG.md) for more troubleshooting tips.
+
+## 📚 Learn More
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Google Gemini API](https://ai.google.dev/)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
 
 ## Deploy on Vercel
 
