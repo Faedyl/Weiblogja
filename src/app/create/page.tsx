@@ -1,288 +1,530 @@
-'use client'
-import { useEffect } from 'react'
-import { useState, FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
-import { Save, Image as ImageIcon, X, Upload } from 'lucide-react'
-import styles from './create.module.css'
-import { useAuth } from '@/contexts/AuthContext'
+'use client';
 
-interface ImageData {
-        url: string
-        alt: string
-        caption?: string
-        position: number
-}
+import { useState, useRef, useCallback } from 'react';
+import { ConversionStatus, BlogConversionResult } from '@/types/pdf';
+import { FileText, Upload, CheckCircle, AlertCircle, Loader, Sparkles, Edit, Save, Eye, X, Plus } from 'lucide-react';
+import styles from './create.module.css';
 
-export default function CreateBlog() {
-        const router = useRouter()
-        const { isAuthenticated, isAuthor, loading: authLoading } = useAuth()
-        const [submitting, setSubmitting] = useState(false)
-        const [uploadingImage, setUploadingImage] = useState(false)
-        const [formData, setFormData] = useState({
-                title: '',
-                content: '',
-                category: '',
-                author_id: 'Faedyl',
-                thumbnail_url: '',
-                images: [] as ImageData[]
-        })
-        useEffect(() => {
-                if (!authLoading && (!isAuthenticated || !isAuthor)) {
-                        router.push('/login')
-                }
-        }, [isAuthenticated, isAuthor, submitting, router])
+export default function CreatePage() {
+	const [file, setFile] = useState<File | null>(null);
+	const [status, setStatus] = useState<ConversionStatus | null>(null);
+	const [result, setResult] = useState<BlogConversionResult | null>(null);
+	const [isProcessing, setIsProcessing] = useState(false);
+	const [isDragging, setIsDragging] = useState(false);
+	const [editMode, setEditMode] = useState(false);
+	const [editedTitle, setEditedTitle] = useState('');
+	const [editedSummary, setEditedSummary] = useState('');
+	const [editedContent, setEditedContent] = useState('');
+	const [editedTags, setEditedTags] = useState<string[]>([]);
+	const [newTag, setNewTag] = useState('');
+	const [isPublishing, setIsPublishing] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
-        // Show loading while checking auth
-        if (authLoading) {
-                return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>
-        }
+	const validateFile = (file: File): string | null => {
+		if (file.type !== 'application/pdf') {
+			return 'Please select a PDF file';
+		}
+		if (file.size > 50 * 1024 * 1024) {
+			return 'File size must be less than 50MB';
+		}
+		return null;
+	};
 
-        // Don't render if not authorized
-        if (!isAuthenticated || !isAuthor) {
-                return null
-        }
+	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const selectedFile = e.target.files?.[0];
+		if (selectedFile) {
+			const error = validateFile(selectedFile);
+			if (error) {
+				alert(error);
+				return;
+			}
+			setFile(selectedFile);
+			setResult(null);
+			setStatus(null);
+		}
+	};
 
-        const handleSubmit = async (e: FormEvent) => {
-                e.preventDefault()
-                setSubmitting(true)
+	const handleDragOver = useCallback((e: React.DragEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setIsDragging(true);
+	}, []);
 
-                try {
-                        const response = await fetch('/api/blogs', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(formData)
-                        })
+	const handleDragLeave = useCallback((e: React.DragEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setIsDragging(false);
+	}, []);
 
-                        if (response.ok) {
-                                const data = await response.json()
-                                alert('Blog created successfully!')
-                                router.push(`/blog/${data.blog.slug}`)
-                        } else {
-                                alert('Failed to create blog')
-                        }
-                } catch (error) {
-                        console.error('Error creating blog:', error)
-                        alert('Error creating blog')
-                } finally {
-                        setSubmitting(false)
-                }
-        }
+	const handleDrop = useCallback((e: React.DragEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setIsDragging(false);
 
-        const handleImageUpload = async (file: File, type: 'thumbnail' | 'content') => {
-                setUploadingImage(true)
-                try {
-                        // Step 1: Get presigned URL
-                        const uploadResponse = await fetch('/api/upload', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                        fileName: file.name,
-                                        fileType: file.type,
-                                        directory: 'blog_images',
-                                        authorId: formData.author_id,
-                                        blogSlug: formData.title.toLowerCase().replace(/\s+/g, '-') || 'untitled'
-                                })
-                        })
+		const droppedFile = e.dataTransfer.files[0];
+		if (droppedFile) {
+			const error = validateFile(droppedFile);
+			if (error) {
+				alert(error);
+				return;
+			}
+			setFile(droppedFile);
+			setResult(null);
+			setStatus(null);
+		}
+	}, []);
 
-                        const { uploadUrl, publicUrl } = await uploadResponse.json()
+	const handleUpload = async () => {
+		if (!file) return;
 
-                        // Step 2: Upload to S3
-                        await fetch(uploadUrl, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': file.type },
-                                body: file
-                        })
+		setIsProcessing(true);
+		setStatus({
+			id: '',
+			status: 'uploading',
+			progress: 10,
+			message: 'Uploading your journal...',
+		});
 
-                        // Step 3: Update form data
-                        if (type === 'thumbnail') {
-                                setFormData({ ...formData, thumbnail_url: publicUrl })
-                        } else {
-                                const newImage: ImageData = {
-                                        url: publicUrl,
-                                        alt: file.name,
-                                        caption: '',
-                                        position: formData.images.length + 1
-                                }
-                                setFormData({
-                                        ...formData,
-                                        images: [...formData.images, newImage]
-                                })
-                        }
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
 
-                        alert('Image uploaded successfully!')
-                } catch (error) {
-                        console.error('Upload error:', error)
-                        alert('Failed to upload image')
-                } finally {
-                        setUploadingImage(false)
-                }
-        }
+			setStatus({
+				id: '',
+				status: 'extracting',
+				progress: 40,
+				message: 'Extracting text and images from PDF...',
+			});
 
-        const removeImage = (index: number) => {
-                const updatedImages = formData.images
-                        .filter((_, i) => i !== index)
-                        .map((img, i) => ({ ...img, position: i + 1 }))
-                setFormData({ ...formData, images: updatedImages })
-        }
-        return (
-                <div className={styles.container}>
-                        <header className={styles.header}>
-                                <h1>Create New Blog Post</h1>
-                                <p className={styles.subtitle}>Share your ideas with the world</p>
-                        </header>
+			const response = await fetch('/api/pdf/upload', {
+				method: 'POST',
+				body: formData,
+			});
 
-                        <form onSubmit={handleSubmit} className={styles.form}>
-                                <div className={styles.formGroup}>
-                                        <label htmlFor="title">
-                                                Title <span className={styles.required}>*</span>
-                                        </label>
-                                        <input
-                                                id="title"
-                                                type="text"
-                                                value={formData.title}
-                                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                                required
-                                                placeholder="Enter an engaging title for your blog"
-                                                className={styles.input}
-                                        />
-                                </div>
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || 'Upload failed');
+			}
 
-                                <div className={styles.formGroup}>
-                                        <label htmlFor="category">Category</label>
-                                        <input
-                                                id="category"
-                                                type="text"
-                                                value={formData.category}
-                                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                placeholder="e.g., Technology, Science, Tutorial"
-                                                className={styles.input}
-                                        />
-                                </div>
+			setStatus({
+				id: '',
+				status: 'converting',
+				progress: 70,
+				message: 'AI is crafting your blog post...',
+			});
 
-                                <div className={styles.formGroup}>
-                                        <label htmlFor="content">
-                                                Content <span className={styles.required}>*</span>
-                                        </label>
-                                        <textarea
-                                                id="content"
-                                                value={formData.content}
-                                                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                                                required
-                                                rows={15}
-                                                placeholder="Write your blog content here... Use double line breaks to separate paragraphs."
-                                                className={styles.textarea}
-                                        />
-                                        <small className={styles.hint}>
-                                                Tip: Use double line breaks (press Enter twice) to create new paragraphs
-                                        </small>
-                                </div>
+			const data = await response.json();
 
-                                <div className={styles.imageSection}>
-                                        <h3>Images</h3>
+			setStatus({
+				id: data.conversionId,
+				status: 'completed',
+				progress: 100,
+				message: 'Your blog post is ready!',
+				result: data.result,
+			});
 
-                                        <div className={styles.formGroup}>
-                                                <label htmlFor="thumbnail">
-                                                        <ImageIcon size={18} />
-                                                        Thumbnail Image (Optional)
-                                                </label>
-                                                <input
-                                                        id="thumbnail"
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={(e) => {
-                                                                const file = e.target.files?.[0]
-                                                                if (file) handleImageUpload(file, 'thumbnail')
-                                                        }}
-                                                        className={styles.fileInput}
-                                                        disabled={uploadingImage}
-                                                />
-                                                {formData.thumbnail_url && (
-                                                        <div className={styles.thumbnailPreview}>
-                                                                <img src={formData.thumbnail_url} alt="Thumbnail preview" />
-                                                                <button
-                                                                        type="button"
-                                                                        onClick={() => setFormData({ ...formData, thumbnail_url: '' })}
-                                                                        className={styles.removeBtn}
-                                                                >
-                                                                        <X size={16} /> Remove
-                                                                </button>
-                                                        </div>
-                                                )}
-                                        </div>
+			setResult(data.result);
+			setEditedTitle(data.result.title);
+			setEditedSummary(data.result.summary);
+			setEditedContent(data.result.content);
+			setEditedTags(data.result.tags);
+		} catch (error) {
+			setStatus({
+				id: '',
+				status: 'failed',
+				progress: 0,
+				message: 'Conversion failed',
+				error: error instanceof Error ? error.message : 'Unknown error',
+			});
+		} finally {
+			setIsProcessing(false);
+		}
+	};
 
-                                        <div className={styles.formGroup}>
-                                                <label htmlFor="contentImages">
-                                                        <ImageIcon size={18} />
-                                                        Content Images (Optional)
-                                                </label>
-                                                <input
-                                                        id="contentImages"
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={(e) => {
-                                                                const file = e.target.files?.[0]
-                                                                if (file) {
-                                                                        handleImageUpload(file, 'content')
-                                                                        e.target.value = '' // Reset input
-                                                                }
-                                                        }}
-                                                        className={styles.fileInput}
-                                                        disabled={uploadingImage}
-                                                />
-                                                <small className={styles.hint}>
-                                                        Images will be inserted between paragraphs in order
-                                                </small>
+	const handleReset = () => {
+		setFile(null);
+		setResult(null);
+		setStatus(null);
+		setEditMode(false);
+		if (fileInputRef.current) {
+			fileInputRef.current.value = '';
+		}
+	};
 
-                                                {formData.images.length > 0 && (
-                                                        <div className={styles.imageList}>
-                                                                {formData.images.map((img, index) => (
-                                                                        <div key={index} className={styles.imageItem}>
-                                                                                <img src={img.url} alt={img.alt} />
-                                                                                <div className={styles.imageInfo}>
-                                                                                        <span>Position: After paragraph {img.position}</span>
-                                                                                        <button
-                                                                                                type="button"
-                                                                                                onClick={() => removeImage(index)}
-                                                                                                className={styles.removeBtn}
-                                                                                        >
-                                                                                                <X size={16} /> Remove
-                                                                                        </button>
-                                                                                </div>
-                                                                        </div>
-                                                                ))}
-                                                        </div>
-                                                )}
-                                        </div>
-                                </div>
+	const toggleEditMode = () => {
+		if (!editMode && result) {
+			setEditedTitle(result.title);
+			setEditedSummary(result.summary);
+			setEditedContent(result.content);
+			setEditedTags(result.tags);
+		}
+		setEditMode(!editMode);
+	};
 
-                                <div className={styles.actions}>
-                                        <button
-                                                type="submit"
-                                                disabled={submitting || uploadingImage}
-                                                className={styles.btnSubmit}
-                                        >
-                                                <Save size={20} />
-                                                {submitting ? 'Creating...' : 'Publish Blog Post'}
-                                        </button>
-                                        <button
-                                                type="button"
-                                                onClick={() => router.back()}
-                                                className={styles.btnCancel}
-                                                disabled={submitting}
-                                        >
-                                                Cancel
-                                        </button>
-                                </div>
-                        </form>
+	const handleSaveEdit = () => {
+		if (result) {
+			setResult({
+				...result,
+				title: editedTitle,
+				summary: editedSummary,
+				content: editedContent,
+				tags: editedTags,
+			});
+		}
+		setEditMode(false);
+	};
 
-                        {uploadingImage && (
-                                <div className={styles.uploadOverlay}>
-                                        <div className={styles.uploadSpinner}>
-                                                <Upload size={40} />
-                                                <p>Uploading image...</p>
-                                        </div>
-                                </div>
-                        )}
-                </div>
-        )
+	const handlePublish = async (isDraft: boolean = false) => {
+		if (!result) return;
+
+		setIsPublishing(true);
+		try {
+			// Get current user from session
+			const sessionResponse = await fetch('/api/auth/session');
+			const sessionData = await sessionResponse.json();
+			const authorId = sessionData?.user?.name || sessionData?.user?.email || 'Anonymous';
+
+			const blogData = {
+				title: result.title,
+				content: result.content,
+				author_id: authorId,
+				category: result.tags[0] || 'General',
+				tags: result.tags,
+				summary: result.summary,
+				status: isDraft ? 'draft' : 'published',
+				ai_generated: true,
+				thumbnail_url: result.thumbnailUrl || '',
+				images: result.imageUrls || []
+			};
+
+			const response = await fetch('/api/blogs', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(blogData),
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to publish blog');
+			}
+
+			const data = await response.json();
+			
+			if (data.success) {
+				alert(isDraft ? '✅ Blog saved as draft!' : '🎉 Blog published successfully!');
+				// Redirect to the blog page
+				setTimeout(() => {
+					window.location.href = `/blog/${data.blog.slug}`;
+				}, 1000);
+			} else {
+				throw new Error('Failed to create blog post');
+			}
+		} catch (error) {
+			console.error('Publish error:', error);
+			alert('❌ Failed to publish blog. Please try again.');
+		} finally {
+			setIsPublishing(false);
+		}
+	};
+
+	const addTag = () => {
+		if (newTag && !editedTags.includes(newTag.trim())) {
+			setEditedTags([...editedTags, newTag.trim()]);
+			setNewTag('');
+		}
+	};
+
+	const removeTag = (tagToRemove: string) => {
+		setEditedTags(editedTags.filter(tag => tag !== tagToRemove));
+	};
+
+	const handleBrowseClick = () => {
+		fileInputRef.current?.click();
+	};
+
+	return (
+		<div className={styles.container}>
+			<div className={styles.header}>
+				<div className={styles.headerContent}>
+					<Sparkles className={styles.headerIcon} size={36} />
+					<h1 className={styles.title}>Transform Journal to Blog</h1>
+					<p className={styles.subtitle}>Upload your PDF journal and let AI create an engaging blog post</p>
+				</div>
+			</div>
+
+			{/* Upload Section */}
+			{!result && (
+				<div className={styles.uploadContainer}>
+					<div 
+						className={`${styles.dropZone} ${isDragging ? styles.dropZoneActive : ''} ${file ? styles.dropZoneHasFile : ''}`}
+						onDragOver={handleDragOver}
+						onDragLeave={handleDragLeave}
+						onDrop={handleDrop}
+					>
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept=".pdf"
+							onChange={handleFileChange}
+							className={styles.fileInputHidden}
+						/>
+						
+						{!file ? (
+							<div className={styles.dropZoneContent}>
+								<Upload className={styles.dropZoneIcon} size={48} />
+								<h3 className={styles.dropZoneTitle}>Drop your PDF here</h3>
+								<p className={styles.dropZoneText}>or</p>
+								<button 
+									onClick={handleBrowseClick}
+									className={`${styles.button} ${styles.browseButton}`}
+								>
+									<FileText size={20} />
+									Browse Files
+								</button>
+								<p className={styles.dropZoneHint}>Maximum file size: 50MB</p>
+							</div>
+						) : (
+							<div className={styles.filePreview}>
+								<FileText className={styles.fileIcon} size={48} />
+								<div className={styles.fileDetails}>
+									<h4 className={styles.fileName}>{file.name}</h4>
+									<p className={styles.fileSize}>{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+								</div>
+								<button 
+									onClick={handleReset}
+									className={styles.removeFileButton}
+									aria-label="Remove file"
+								>
+									<X size={20} />
+								</button>
+							</div>
+						)}
+					</div>
+
+					{file && !status && (
+						<button
+							onClick={handleUpload}
+							disabled={isProcessing}
+							className={`${styles.button} ${styles.convertButton}`}
+						>
+							<Sparkles size={20} />
+							Convert to Blog Post
+						</button>
+					)}
+				</div>
+			)}
+
+			{/* Status Section */}
+			{status && !result && (
+				<div className={styles.statusCard}>
+					<div className={styles.statusIconContainer}>
+						{status.status === 'failed' ? (
+							<AlertCircle className={styles.statusIconError} size={48} />
+						) : status.status === 'completed' ? (
+							<CheckCircle className={styles.statusIconSuccess} size={48} />
+						) : (
+							<Loader className={`${styles.statusIconLoading} ${styles.spin}`} size={48} />
+						)}
+					</div>
+					
+					<h2 className={styles.statusTitle}>{status.message}</h2>
+					
+					<div className={styles.progressContainer}>
+						<div className={styles.progressBarWrapper}>
+							<div
+								className={`${styles.progressBar} ${status.status === 'failed' ? styles.progressBarError : ''}`}
+								style={{ width: `${status.progress}%` }}
+							/>
+						</div>
+						<span className={styles.progressText}>{status.progress}%</span>
+					</div>
+
+					{status.error && (
+						<div className={styles.errorAlert}>
+							<AlertCircle size={20} />
+							<div>
+								<strong>Error:</strong> {status.error}
+							</div>
+						</div>
+					)}
+
+					{status.status === 'failed' && (
+						<button onClick={handleReset} className={`${styles.button} ${styles.secondaryButton}`}>
+							Try Again
+						</button>
+					)}
+				</div>
+			)}
+
+			{/* Result Section */}
+			{result && (
+				<div className={styles.resultWrapper}>
+					<div className={styles.resultActions}>
+						<button
+							onClick={handleReset}
+							className={`${styles.button} ${styles.secondaryButton}`}
+						>
+							<Upload size={18} />
+							Upload New PDF
+						</button>
+						<button
+							onClick={toggleEditMode}
+							className={`${styles.button} ${editMode ? styles.secondaryButton : styles.primaryButton}`}
+						>
+							{editMode ? (
+								<>
+									<Eye size={18} />
+									Preview
+								</>
+							) : (
+								<>
+									<Edit size={18} />
+									Edit
+								</>
+							)}
+						</button>
+					</div>
+
+					<div className={styles.resultCard}>
+						{editMode ? (
+							<div className={styles.editContainer}>
+								<div className={styles.formGroup}>
+									<label className={styles.formLabel}>Title</label>
+									<input
+										type="text"
+										value={editedTitle}
+										onChange={(e) => setEditedTitle(e.target.value)}
+										className={styles.formInput}
+										placeholder="Enter blog title"
+									/>
+								</div>
+
+								<div className={styles.formGroup}>
+									<label className={styles.formLabel}>Summary</label>
+									<textarea
+										value={editedSummary}
+										onChange={(e) => setEditedSummary(e.target.value)}
+										className={styles.formTextarea}
+										rows={3}
+										placeholder="Enter blog summary"
+									/>
+								</div>
+
+								<div className={styles.formGroup}>
+									<label className={styles.formLabel}>Tags</label>
+									<div className={styles.tagsEditor}>
+										<div className={styles.tagsContainer}>
+											{editedTags.map((tag, index) => (
+												<span key={index} className={styles.tagEditable}>
+													{tag}
+													<button
+														onClick={() => removeTag(tag)}
+														className={styles.tagRemove}
+														aria-label="Remove tag"
+													>
+														<X size={14} />
+													</button>
+												</span>
+											))}
+										</div>
+										<div className={styles.tagInputGroup}>
+											<input
+												type="text"
+												value={newTag}
+												onChange={(e) => setNewTag(e.target.value)}
+												onKeyPress={(e) => e.key === 'Enter' && addTag()}
+												className={styles.tagInput}
+												placeholder="Add a tag"
+											/>
+											<button
+												onClick={addTag}
+												className={styles.addTagButton}
+											>
+												<Plus size={18} />
+											</button>
+										</div>
+									</div>
+								</div>
+
+								<div className={styles.formGroup}>
+									<label className={styles.formLabel}>Content</label>
+									<textarea
+										value={editedContent}
+										onChange={(e) => setEditedContent(e.target.value)}
+										className={`${styles.formTextarea} ${styles.contentEditor}`}
+										rows={20}
+										placeholder="Enter blog content (HTML supported)"
+									/>
+								</div>
+
+								<button
+									onClick={handleSaveEdit}
+									className={`${styles.button} ${styles.successButton}`}
+								>
+									<Save size={18} />
+									Save Changes
+								</button>
+							</div>
+						) : (
+							<div className={styles.previewContainer}>
+								<h1 className={styles.resultTitle}>{result.title}</h1>
+								<p className={styles.resultSummary}>{result.summary}</p>
+								
+								<div className={styles.tagsContainer}>
+									{result.tags.map((tag, index) => (
+										<span key={index} className={styles.tag}>
+											{tag}
+										</span>
+									))}
+								</div>
+
+								{result.imageUrls && result.imageUrls.length > 0 && (
+									<div className={styles.imagesSection}>
+										<h3 className={styles.sectionTitle}>Extracted Images ({result.imageUrls.length})</h3>
+										<div className={styles.imagesGrid}>
+											{result.imageUrls.map((url, index) => (
+												<div key={index} className={styles.imagePreview}>
+													<img src={url} alt={`Extracted image ${index + 1}`} />
+													<p className={styles.imageLabel}>Page {index + 1}</p>
+												</div>
+											))}
+										</div>
+									</div>
+								)}
+
+								<div
+									className={styles.resultContent}
+									dangerouslySetInnerHTML={{ __html: result.content }}
+								/>
+							</div>
+						)}
+					</div>
+
+					{!editMode && (
+						<div className={styles.publishCard}>
+							<h3 className={styles.publishTitle}>Ready to Publish?</h3>
+							<div className={styles.publishActions}>
+								<button 
+									className={`${styles.button} ${styles.outlineButton}`}
+									onClick={() => handlePublish(true)}
+									disabled={isPublishing}
+								>
+									{isPublishing ? 'Saving...' : 'Save as Draft'}
+								</button>
+								<button 
+									className={`${styles.button} ${styles.publishButton}`}
+									onClick={() => handlePublish(false)}
+									disabled={isPublishing}
+								>
+									<Sparkles size={18} />
+									{isPublishing ? 'Publishing...' : 'Publish Now'}
+								</button>
+							</div>
+						</div>
+					)}
+				</div>
+			)}
+		</div>
+	);
 }
