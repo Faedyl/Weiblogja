@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { logger } from './logger'
 
 const s3Client = new S3Client({
 	region: process.env.AWS_REGION!,
@@ -178,6 +179,6 @@ export async function cleanupTempImages(processingId: string): Promise<void> {
 	// Note: This is a simplified cleanup. In production, you might want to
 	// list objects with the prefix and delete them in batches
 	const prefix = `${S3_DIRECTORIES.TEMP_UPLOADS}/${processingId}/`
-	console.log(`Cleanup temp images with prefix: ${prefix}`)
+	logger.debug(`Cleanup temp images with prefix: ${prefix}`)
 	// Implementation for batch deletion would go here
 }

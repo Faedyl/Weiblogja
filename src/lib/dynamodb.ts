@@ -1,5 +1,6 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb"
 import { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand } from "@aws-sdk/lib-dynamodb"
+import { logger } from './logger'
 
 const client = new DynamoDBClient({
 	region: process.env.AWS_REGION,
@@ -25,8 +26,10 @@ export interface BlogPost {
 	GSI1SK: string
 	title: string
 	content: string
+	summary?: string // AI-generated summary for blog cards
 	author_id: string
 	category?: string
+	tags?: string[] // Tags from AI conversion
 	status: 'draft' | 'published'
 	created_at: string
 	updated_at: string
@@ -71,8 +74,8 @@ export async function getRecentBlogs(limit: number = 6): Promise<BlogPost[]> {
 		const result = await dynamoDB.send(command);
 		const blogs = (result.Items || []) as BlogPost[];
 
-		console.log(`📊 DynamoDB returned ${blogs.length} total blogs`);
-		console.log('📝 Blog timestamps:', blogs.map(b => ({ title: b.title, created: b.created_at })));
+		logger.debug(`📊 DynamoDB returned ${blogs.length} total blogs`);
+		logger.debug('📝 Blog timestamps:', blogs.map(b => ({ title: b.title, created: b.created_at })));
 
 		// Sort by created_at descending (newest first) and limit
 		const sortedBlogs = blogs
@@ -87,8 +90,8 @@ export async function getRecentBlogs(limit: number = 6): Promise<BlogPost[]> {
 				slug: blog.PK.replace('BLOG#', '')
 			}));
 
-		console.log(`✅ Returning ${sortedBlogs.length} sorted blogs`);
-		console.log('🏆 Final order:', sortedBlogs.map(b => ({ title: b.title, created: b.created_at })));
+		logger.debug(`✅ Returning ${sortedBlogs.length} sorted blogs`);
+		logger.debug('🏆 Final order:', sortedBlogs.map(b => ({ title: b.title, created: b.created_at })));
 
 		return sortedBlogs;
 
@@ -297,7 +300,7 @@ export async function createTestBlogWithImages() {
 		})
 
 		await dynamoDB.send(command)
-		console.log('✅ Test blog with real S3 images created!')
+		logger.debug('✅ Test blog with real S3 images created!')
 
 		return { success: true, blog: blogWithRealImages }
 	} catch (error) {
@@ -385,7 +388,7 @@ export async function createSampleBlogsWithImages() {
 		);
 
 		await Promise.all(commands.map(cmd => dynamoDB.send(cmd)));
-		console.log('✅ Sample blogs with images created successfully');
+		logger.debug('✅ Sample blogs with images created successfully');
 
 		return {
 			success: true,

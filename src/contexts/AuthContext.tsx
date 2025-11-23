@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
+import { logger } from '@/lib/logger'
 
 interface User {
         id: string
@@ -34,21 +35,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                 email: session.user.email || '',
                                 role: (session.user.role as 'author' | 'visitor') || 'visitor'
                         }
-                        console.log('✅ NextAuth session active:', userData)
+                        logger.debug('✅ NextAuth session active:', userData)
                         setUser(userData)
                 } else if (status === 'unauthenticated') {
-                        console.log('ℹ️ No active session')
+                        logger.debug('ℹ️ No active session')
                         setUser(null)
                 }
         }, [session, status])
 
         const login = (userData: User) => {
-                console.log('🔐 Manual login called:', userData)
+                logger.debug('🔐 Manual login called:', userData)
                 setUser(userData)
         }
 
         const logout = () => {
-                console.log('🚪 Logout called')
+                logger.debug('🚪 Logout called')
                 setUser(null)
         }
 
@@ -67,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Log state changes
         useEffect(() => {
-                console.log('🔄 Auth state:', {
+                logger.debug('🔄 Auth state:', {
                         status,
                         user: user?.username,
                         role: user?.role,
