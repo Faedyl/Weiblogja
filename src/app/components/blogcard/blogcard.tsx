@@ -17,9 +17,25 @@ export default function BlogCard({ blog }: BlogCardProps) {
 		})
 	}
 
+	const stripHtmlTags = (html: string) => {
+		return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+	}
+
 	const getContentPreview = (content: string, maxLength: number = 150) => {
-		if (content.length <= maxLength) return content
-		return content.substring(0, maxLength).trim() + '...'
+		const plainText = stripHtmlTags(content);
+		if (plainText.length <= maxLength) return plainText;
+		return plainText.substring(0, maxLength).trim() + '...';
+	}
+
+	const getSummary = () => {
+		// Use AI-generated summary if available
+		if (blog.summary) {
+			return blog.summary.length > 200 
+				? blog.summary.substring(0, 200).trim() + '...'
+				: blog.summary;
+		}
+		// Fallback to content preview
+		return getContentPreview(blog.content);
 	}
 
 	return (
@@ -37,7 +53,7 @@ export default function BlogCard({ blog }: BlogCardProps) {
 							{blog.title}
 						</h3>
 						{blog.ai_generated && (
-							<span className={styles.aiTag}>AI Generated</span>
+							<span className={styles.aiTag}>🤖 AI Generated</span>
 						)}
 					</div>
 					{/* Thumbnail - positioned absolutely */}
@@ -46,8 +62,8 @@ export default function BlogCard({ blog }: BlogCardProps) {
 							<Image
 								src={blog.thumbnail_url}
 								alt={`${blog.title} thumbnail`}
-								width={120}
-								height={80}
+								fill
+								sizes="(max-width: 570px) 100vw, 180px"
 								className={styles.thumbnail}
 							/>
 						</div>
@@ -66,8 +82,19 @@ export default function BlogCard({ blog }: BlogCardProps) {
 					</div>
 
 					<p className={styles.preview}>
-						{getContentPreview(blog.content)}
+						{getSummary()}
 					</p>
+
+					{/* Show tags if available */}
+					{blog.tags && blog.tags.length > 0 && (
+						<div className={styles.tags}>
+							{blog.tags.slice(0, 3).map((tag, index) => (
+								<span key={index} className={styles.tag}>
+									{tag}
+								</span>
+							))}
+						</div>
+					)}
 
 					{blog.category && (
 						<div className={styles.category}>

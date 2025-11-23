@@ -24,9 +24,10 @@
 /* Thumbnail Styling */
 .thumbnailContainer {
 	position: absolute;
-	top: 1rem;
+	top: 3.5rem;
 	right: 1rem;
-
+	width: 180px;
+	height: 180px;
 	border-radius: 8px;
 	overflow: hidden;
 	opacity: 0.3;
@@ -149,6 +150,31 @@
 	border: 1px solid #e6f3ff;
 }
 
+/* Tags styling */
+.tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+.tag {
+	background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+	color: #667eea;
+	padding: 0.25rem 0.6rem;
+	border-radius: 12px;
+	font-size: 0.75rem;
+	font-weight: 500;
+	border: 1px solid rgba(102, 126, 234, 0.2);
+	transition: all 0.3s ease;
+}
+
+.tag:hover {
+	background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+	border-color: rgba(102, 126, 234, 0.4);
+	transform: translateY(-1px);
+}
+
 .cardFooter {
 	margin-top: auto;
 	padding-top: 1rem;
@@ -189,7 +215,7 @@
 	}
 
 	.cardContent {
-		padding-right: 100px;
+		padding-right: 200px;
 		display: flex;
 		/* Smaller padding on mobile */
 	}
@@ -221,7 +247,7 @@
 	}
 
 	.cardContent {
-		padding-right: 100px;
+		padding-right: 200px;
 		display: flex;
 		/* Smaller padding on mobile */
 	}
@@ -254,7 +280,7 @@
 		top: 0;
 		right: 0;
 		width: 100%;
-		height: 100%;
+		height: 200px;
 		margin-bottom: 1rem;
 		opacity: 1;
 	}
