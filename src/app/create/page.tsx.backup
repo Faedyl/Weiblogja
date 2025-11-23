@@ -1,0 +1,210 @@
+'use client';
+
+import { useState, useRef } from 'react';
+import { ConversionStatus, BlogConversionResult } from '@/types/pdf';
+import styles from './create.module.css';
+
+export default function CreatePage() {
+        const [file, setFile] = useState<File | null>(null);
+        const [status, setStatus] = useState<ConversionStatus | null>(null);
+        const [result, setResult] = useState<BlogConversionResult | null>(null);
+        const [isProcessing, setIsProcessing] = useState(false);
+        const fileInputRef = useRef<HTMLInputElement>(null);
+
+        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                const selectedFile = e.target.files?.[0];
+                if (selectedFile) {
+                        if (selectedFile.type !== 'application/pdf') {
+                                alert('Please select a PDF file');
+                                return;
+                        }
+                        if (selectedFile.size > 50 * 1024 * 1024) {
+                                alert('File size must be less than 50MB');
+                                return;
+                        }
+                        setFile(selectedFile);
+                        setResult(null);
+                        setStatus(null);
+                }
+        };
+
+        const handleUpload = async () => {
+                if (!file) return;
+
+                setIsProcessing(true);
+                setStatus({
+                        id: '',
+                        status: 'uploading',
+                        progress: 0,
+                        message: 'Uploading PDF...',
+                });
+
+                try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        setStatus({
+                                id: '',
+                                status: 'extracting',
+                                progress: 30,
+                                message: 'Extracting text and images from PDF...',
+                        });
+
+                        const response = await fetch('/api/pdf/upload', {
+                                method: 'POST',
+                                body: formData,
+                        });
+
+                        if (!response.ok) {
+                                const error = await response.json();
+                                throw new Error(error.error || 'Upload failed');
+                        }
+
+                        setStatus({
+                                id: '',
+                                status: 'converting',
+                                progress: 60,
+                                message: 'Converting to blog post with AI...',
+                        });
+
+                        const data = await response.json();
+
+                        setStatus({
+                                id: data.conversionId,
+                                status: 'completed',
+                                progress: 100,
+                                message: 'Conversion completed!',
+                                result: data.result,
+                        });
+
+                        setResult(data.result);
+                } catch (error: any) {
+                        setStatus({
+                                id: '',
+                                status: 'failed',
+                                progress: 0,
+                                message: 'Conversion failed',
+                                error: error.message,
+                        });
+                } finally {
+                        setIsProcessing(false);
+                }
+        };
+
+        const handleReset = () => {
+                setFile(null);
+                setResult(null);
+                setStatus(null);
+                if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                }
+        };
+
+        return (
+                <div className={styles.container}>
+                        <h1 className={styles.title}>Create Blog from PDF</h1>
+
+                        {/* Upload Section */}
+                        {!result && (
+                                <div className={styles.card}>
+                                        <div className={styles.uploadSection}>
+                                                <label className={styles.label}>Upload Journal PDF</label>
+                                                <input
+                                                        ref={fileInputRef}
+                                                        type="file"
+                                                        accept=".pdf"
+                                                        onChange={handleFileChange}
+                                                        className={styles.fileInput}
+                                                />
+                                                {file && (
+                                                        <p className={styles.fileInfo}>
+                                                                Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                                                        </p>
+                                                )}
+                                        </div>
+
+                                        <button
+                                                onClick={handleUpload}
+                                                disabled={!file || isProcessing}
+                                                className={`${styles.button} ${styles.primaryButton}`}
+                                        >
+                                                {isProcessing ? 'Processing...' : 'Convert to Blog'}
+                                        </button>
+                                </div>
+                        )}
+
+                        {/* Status Section */}
+                        {status && (
+                                <div className={styles.card}>
+                                        <h2 className={styles.subtitle}>Conversion Status</h2>
+                                        <div className={styles.statusSection}>
+                                                <div className={styles.statusHeader}>
+                                                        <span className={styles.statusMessage}>{status.message}</span>
+                                                        <span className={styles.statusProgress}>{status.progress}%</span>
+                                                </div>
+                                                <div className={styles.progressBarContainer}>
+                                                        <div
+                                                                className={`${styles.progressBar} ${status.status === 'failed' ? styles.progressBarError : ''
+                                                                        }`}
+                                                                style={{ width: `${status.progress}%` }}
+                                                        />
+                                                </div>
+                                        </div>
+                                        {status.error && (
+                                                <div className={styles.errorBox}>
+                                                        <strong>Error:</strong> {status.error}
+                                                </div>
+                                        )}
+                                </div>
+                        )}
+
+                        {/* Result Section */}
+                        {result && (
+                                <div className={styles.resultContainer}>
+                                        <div className={styles.card}>
+                                                <div className={styles.resultHeader}>
+                                                        <h2 className={styles.resultTitle}>{result.title}</h2>
+                                                        <button
+                                                                onClick={handleReset}
+                                                                className={`${styles.button} ${styles.secondaryButton}`}
+                                                        >
+                                                                Upload New PDF
+                                                        </button>
+                                                </div>
+
+                                                <p className={styles.summary}>{result.summary}</p>
+
+                                                <div className={styles.tagsContainer}>
+                                                        {result.tags.map((tag, index) => (
+                                                                <span key={index} className={styles.tag}>
+                                                                        {tag}
+                                                                </span>
+                                                        ))}
+                                                </div>
+
+                                                <div
+                                                        className={styles.content}
+                                                        dangerouslySetInnerHTML={{ __html: result.content }}
+                                                />
+                                        </div>
+
+                                        {/* Edit Options */}
+                                        <div className={styles.card}>
+                                                <h3 className={styles.subtitle}>Next Steps</h3>
+                                                <div className={styles.actionButtons}>
+                                                        <button className={`${styles.button} ${styles.successButton}`}>
+                                                                Save as Draft
+                                                        </button>
+                                                        <button className={`${styles.button} ${styles.primaryButton}`}>
+                                                                Edit Content
+                                                        </button>
+                                                        <button className={`${styles.button} ${styles.accentButton}`}>
+                                                                Publish
+                                                        </button>
+                                                </div>
+                                        </div>
+                                </div>
+                        )}
+                </div>
+        );
+}
