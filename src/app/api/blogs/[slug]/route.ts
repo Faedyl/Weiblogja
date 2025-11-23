@@ -40,11 +40,11 @@ export async function PUT(
         try {
                 const { slug } = params
                 const body = await request.json()
-                const { title, content, category, thumbnail_url, images } = body
+                const { title, content, category, thumbnail_url, images, tags, summary, status } = body
 
-                const updateExpression = []
-                const expressionAttributeValues: any = {}
-                const expressionAttributeNames: any = {}
+                const updateExpression: string[] = []
+                const expressionAttributeValues: Record<string, unknown> = {}
+                const expressionAttributeNames: Record<string, string> = {}
 
                 if (title) {
                         updateExpression.push('#title = :title')
@@ -57,15 +57,35 @@ export async function PUT(
                         expressionAttributeValues[':content'] = content
                 }
 
+                if (category !== undefined) {
+                        updateExpression.push('category = :category')
+                        expressionAttributeValues[':category'] = category
+                }
+
                 if (thumbnail_url) {
                         updateExpression.push('thumbnail_url = :thumbnail_url')
                         expressionAttributeValues[':thumbnail_url'] = thumbnail_url
                 }
 
-                // This is the key part - updating images
                 if (images !== undefined) {
                         updateExpression.push('images = :images')
                         expressionAttributeValues[':images'] = images
+                }
+
+                if (tags !== undefined) {
+                        updateExpression.push('tags = :tags')
+                        expressionAttributeValues[':tags'] = tags
+                }
+
+                if (summary !== undefined) {
+                        updateExpression.push('summary = :summary')
+                        expressionAttributeValues[':summary'] = summary
+                }
+
+                if (status !== undefined) {
+                        updateExpression.push('#status = :status')
+                        expressionAttributeNames['#status'] = 'status'
+                        expressionAttributeValues[':status'] = status
                 }
 
                 updateExpression.push('updated_at = :updated_at')

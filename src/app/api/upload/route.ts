@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { logger } from '@/lib/logger'
 
 const s3Client = new S3Client({
 	region: process.env.AWS_REGION!,
@@ -14,7 +15,7 @@ const s3Client = new S3Client({
 
 export async function POST(request: NextRequest) {
 	try {
-		console.log('🚀 Upload API called at:', new Date().toISOString())
+		logger.debug('🚀 Upload API called at:', new Date().toISOString())
 
 		const body = await request.json()
 		const {
@@ -39,9 +40,9 @@ export async function POST(request: NextRequest) {
 		const directoryPath = directory.toLowerCase().replace('blog_', '')
 		const key = `weiblogja/blogs/${directoryPath}/author_${authorId}/${blogSlug || 'test'}/${timestamp}_${sanitizedFileName}`
 
-		console.log('🔑 S3 Key:', key)
-		console.log('🏠 Bucket:', process.env.S3_BUCKET_NAME)
-		console.log('🌍 Region:', process.env.AWS_REGION)
+		logger.debug('🔑 S3 Key:', key)
+		logger.debug('🏠 Bucket:', process.env.S3_BUCKET_NAME)
+		logger.debug('🌍 Region:', process.env.AWS_REGION)
 
 		// Create a SIMPLE presigned URL without problematic headers
 		const command = new PutObjectCommand({
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
 
 		const publicUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
 
-		console.log('✅ Generated presigned URL successfully')
+		logger.debug('✅ Generated presigned URL successfully')
 
 		return NextResponse.json({
 			success: true,
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
 		})
 
 	} catch (error) {
-		console.error('❌ Upload API error:', error as Error)
+		logger.error('❌ Upload API error:', error as Error)
 		return NextResponse.json(
 			{
 				error: 'Failed to generate upload URL',
