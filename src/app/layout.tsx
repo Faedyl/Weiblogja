@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "./components/sidebar/sidebar"
-import Navbar from "./components/navbar/navbar"
-import { AuthProvider } from "@/contexts/AuthContext"
-
 import { SessionProvider } from "next-auth/react"
+import ClientLayout from "./ClientLayout";
+
 const geistSans = Geist({
         variable: "--font-geist-sans",
         subsets: ["latin"],
@@ -30,16 +28,11 @@ export default function RootLayout({
                 <html lang="en">
                         <body className={`${geistSans.variable} ${geistMono.variable}`}>
                                 <SessionProvider>
-                                        <AuthProvider>
-                                                <Navbar />
-                                                <div className="app-container">
-                                                        <Sidebar />
-                                                        <main className="main-content">
-                                                                {children}
-                                                        </main>
-                                                </div>
-                                        </AuthProvider>
-                                </SessionProvider>                        </body>
+                                        <ClientLayout>
+                                                {children}
+                                        </ClientLayout>
+                                </SessionProvider>
+                        </body>
                 </html>
         );
 }
