@@ -3,6 +3,7 @@ import { Search, X, Loader2 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import styles from './searchbar.module.css'
 import { BlogPost } from '@/lib/dynamodb'
+import { stripHtmlTags, createSearchExcerpt } from '@/lib/utils'
 interface SearchBarProps {
 	placeholder?: string
 	showResults?: boolean
@@ -218,6 +219,9 @@ function SearchResultCard({ blog, query }: { blog: BlogPost; query: string }) {
 		})
 	}
 
+	const plainTextContent = stripHtmlTags(blog.content)
+	const excerpt = createSearchExcerpt(plainTextContent, query, 120)
+
 	return (
 		<div className={styles.resultCard}>
 			<div className={styles.resultContent}>
@@ -225,7 +229,7 @@ function SearchResultCard({ blog, query }: { blog: BlogPost; query: string }) {
 					{highlightText(blog.title, query)}
 				</h4>
 				<p className={styles.resultPreview}>
-					{highlightText(blog.content.substring(0, 120) + '...', query)}
+					{highlightText(excerpt, query)}
 				</p>
 				<div className={styles.resultMeta}>
 					<span className={styles.resultAuthor}>{blog.author_id}</span>

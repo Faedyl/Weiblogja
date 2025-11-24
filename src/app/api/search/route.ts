@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { BlogPost } from '@/lib/dynamodb'
+import { stripHtmlTags } from '@/lib/utils'
 
 const client = new DynamoDBClient({
 	region: process.env.AWS_REGION,
@@ -43,11 +44,12 @@ export async function GET(request: NextRequest) {
 		const response = await docClient.send(command)
 		const allBlogs = (response.Items as BlogPost[]) || []
 
-		// Filter blogs based on search terms
+		// Filter blogs based on search terms (strip HTML from content)
 		const filteredBlogs = allBlogs.filter(blog => {
+			const plainTextContent = stripHtmlTags(blog.content || '')
 			const searchableText = [
 				blog.title || '',
-				blog.content || '',
+				plainTextContent,
 				blog.author_id || '',
 				blog.category || ''
 			].join(' ').toLowerCase()

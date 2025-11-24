@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Search, Loader2, Filter } from 'lucide-react'
 import BlogCard from '../components/blogcard/blogcard'
 import { BlogPost } from '@/lib/dynamodb'
+import { stripHtmlTags } from '@/lib/utils'
 import styles from './library.module.css'
 
 export default function Library() {
@@ -53,15 +54,18 @@ export default function Library() {
                         results = results.filter(blog => blog.category === selectedCategory)
                 }
 
-                // Filter by search query
+                // Filter by search query (strip HTML tags from content)
                 if (searchQuery.trim()) {
                         const query = searchQuery.toLowerCase()
-                        results = results.filter(blog =>
-                                blog.title.toLowerCase().includes(query) ||
-                                blog.content.toLowerCase().includes(query) ||
-                                blog.author_id.toLowerCase().includes(query) ||
-                                (blog.category && blog.category.toLowerCase().includes(query))
-                        )
+                        results = results.filter(blog => {
+                                const plainTextContent = stripHtmlTags(blog.content || '')
+                                return (
+                                        blog.title.toLowerCase().includes(query) ||
+                                        plainTextContent.toLowerCase().includes(query) ||
+                                        blog.author_id.toLowerCase().includes(query) ||
+                                        (blog.category && blog.category.toLowerCase().includes(query))
+                                )
+                        })
                 }
 
                 setFilteredBlogs(results)
