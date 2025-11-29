@@ -2,10 +2,11 @@
 	background: #154d71;
 	backdrop-filter: blur(10px);
 	border-bottom: 1px solid rgba(21, 77, 113, 0.1);
-	position: sticky;
+	position: fixed;
 	top: 0;
 	z-index: 1000;
 	box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+	width: 100%;
 }
 
 .navContainer {

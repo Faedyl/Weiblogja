@@ -2,8 +2,18 @@
 	font-size: 1.1rem;
 	line-height: 1.8;
 	color: #333;
-	max-width: 800px;
+	width: 100%;
+	max-width: 100%;
 	margin: 0 auto;
+	padding: 0 1rem;
+}
+
+/* Desktop */
+@media (min-width: 769px) {
+	.content {
+		max-width: 800px;
+		padding: 0;
+	}
 }
 
 .paragraph {
@@ -17,39 +27,122 @@
 }
 
 .imageContainer {
-	margin: 2rem auto;
+	margin: 2.5rem auto;
 	text-align: center;
-	background: #f8f9fa;
-	border-radius: 12px;
-	padding: 1rem;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	background: transparent; /* Removed background to match paragraph style */
+	border-radius: 0; /* Removed border-radius to match paragraph style */
+	padding: 0; /* Removed padding to match paragraph style */
+	box-shadow: none; /* Removed box-shadow to match paragraph style */
 	overflow: hidden;
-	max-width: 800px;
+	width: 100%;
+	max-width: 100%;
+	transition: all 0.3s ease;
+	border: none; /* Removed border to match paragraph style */
+}
+
+/* Apply the same max-width as paragraphs on desktop */
+@media (min-width: 769px) {
+	.imageContainer {
+		max-width: 800px; /* Match paragraph width */
+		margin: 2.5rem auto;
+	}
+}
+
+.imageContainer:hover {
+	box-shadow: none; /* Removed hover effect to match paragraph style */
+	transform: none; /* Removed transform to match paragraph style */
 }
 
 .contentImage {
 	width: 100%;
 	height: auto;
-	max-width: 600px;
-	border-radius: 8px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	transition: transform 0.3s ease;
-	object-fit: cover;
+	max-width: 100%;
+	border-radius: 8px; /* Reduced border-radius to be more subtle */
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Reduced shadow to be more subtle */
+	transition: all 0.3s ease;
+	object-fit: contain;
 	display: block;
 	margin: 0 auto;
+	border: none; /* Removed border to match paragraph style */
 }
 
 .contentImage:hover {
-	transform: scale(1.02);
+	transform: scale(1.01); /* Reduced scale effect */
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Reduced shadow on hover */
 }
 
+/* Enhanced image caption */
 .imageCaption {
-	margin-top: 1rem;
+	margin-top: 1.25rem;
 	margin-bottom: 0;
-	font-size: 0.9rem;
-	color: #666;
+	font-size: 1rem;
+	color: #495057;
 	font-style: italic;
 	text-align: center;
+	line-height: 1.5;
+	padding: 0.75rem 1rem;
+	background: rgba(255, 255, 255, 0.7);
+	border-radius: 8px;
+	border-left: 4px solid #667eea;
+	backdrop-filter: blur(4px);
+	max-width: 90%;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.imageCaption::before {
+	content: '"';
+	display: inline-block;
+	margin-right: 0.25rem;
+	font-size: 1.5em;
+	color: #667eea;
+	vertical-align: middle;
+}
+
+.imageCaption::after {
+	content: '"';
+	display: inline-block;
+	margin-left: 0.25rem;
+	font-size: 1.5em;
+	color: #667eea;
+	vertical-align: middle;
+}
+
+/* Responsive adjustments for images in blog content */
+@media (max-width: 768px) {
+	.imageContainer {
+		margin: 2rem auto;
+		padding: 1rem;
+		border-radius: 12px;
+	}
+
+	.contentImage {
+		border-radius: 10px;
+	}
+
+	.imageCaption {
+		font-size: 0.95rem;
+		padding: 0.6rem 0.8rem;
+		margin-top: 1rem;
+	}
+}
+
+@media (max-width: 480px) {
+	.imageContainer {
+		margin: 1.5rem auto;
+		padding: 0.75rem;
+		border-radius: 10px;
+	}
+
+	.contentImage {
+		border-radius: 8px;
+	}
+
+	.imageCaption {
+		font-size: 0.9rem;
+		padding: 0.5rem 0.7rem;
+		margin-top: 0.75rem;
+	}
 }
 
 /* Responsive Design */
@@ -109,25 +202,30 @@
 
 /* Style for blog-image class in AI-generated content */
 .htmlContent :global(.blog-image) {
-	width: auto;
-	max-width: 600px;
+	width: 100%;
 	height: auto;
-	max-height: 400px;
 	border-radius: 8px;
 	margin: 2rem auto;
 	display: block;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	background: #f8f9fa;
-	padding: 1rem;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	background: transparent; /* Removed background to match paragraph style */
+	padding: 0; /* Removed padding to match paragraph style */
 	box-sizing: border-box;
 	cursor: pointer;
 	transition: transform 0.3s ease, box-shadow 0.3s ease;
 	object-fit: contain;
 }
 
+/* Apply the same max-width as paragraphs on desktop */
+@media (min-width: 769px) {
+	.htmlContent :global(.blog-image) {
+		max-width: 800px; /* Match paragraph width */
+	}
+}
+
 .htmlContent :global(.blog-image):hover {
-	transform: scale(1.02);
-	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+	transform: scale(1.01); /* Reduced scale effect */
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Reduced shadow on hover */
 }
 
 /* HTML Typography */
@@ -274,7 +372,8 @@
 	margin: 2rem 0;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	border-radius: 8px;
-	overflow: hidden;
+	overflow-x: auto;
+	display: block;
 }
 
 .htmlContent th {
@@ -419,7 +518,7 @@
 	z-index: 9999;
 	padding: 1rem;
 	animation: fadeIn 0.2s ease;
-	overflow: auto;
+	overflow: hidden;
 }
 
 @keyframes fadeIn {
@@ -468,30 +567,116 @@
 	transition: all 0.2s ease;
 	z-index: 10000;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	backdrop-filter: blur(8px);
 }
 
-.imageModalClose:hover {
+.imageModalClose:hover,
+.imageModalClose:focus {
 	background: white;
 	transform: scale(1.1);
+	outline: none;
+}
+
+.imageModalClose:focus-visible {
+	outline: 2px solid #667eea;
+	outline-offset: 2px;
 }
 
 .imageModalContainer {
 	max-width: 100%;
 	max-height: 100%;
 	display: flex;
+	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 	padding: 3rem 1rem 1rem;
+	position: relative;
 }
 
 .imageModalImage {
 	max-width: 100%;
-	max-height: calc(100vh - 4rem);
+	max-height: calc(100vh - 8rem);
 	width: auto;
 	height: auto;
 	object-fit: contain;
-	border-radius: 8px;
+	border-radius: 12px;
 	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+	transition: all 0.3s ease;
+}
+
+.imageModalImage:hover {
+	transform: scale(1.01);
+	box-shadow: 0 15px 50px rgba(0, 0, 0, 0.6);
+}
+
+/* Navigation buttons for image gallery */
+.navButton {
+	position: fixed;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.75rem;
+	background: rgba(255, 255, 255, 0.2);
+	color: white;
+	border: none;
+	border-radius: 50%;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	z-index: 10000;
+	backdrop-filter: blur(4px);
+}
+
+.navButton:hover,
+.navButton:focus {
+	background: rgba(255, 255, 255, 0.3);
+	transform: scale(1.1);
+	outline: none;
+}
+
+.navButton:focus-visible {
+	outline: 2px solid #667eea;
+	outline-offset: 2px;
+}
+
+.prevButton {
+	top: 50%;
+	left: 1rem;
+	transform: translateY(-50%);
+}
+
+.nextButton {
+	top: 50%;
+	right: 1rem;
+	transform: translateY(-50%);
+}
+
+/* Image counter */
+.imageCounter {
+	position: fixed;
+	bottom: 1rem;
+	right: 1rem;
+	background: rgba(0, 0, 0, 0.7);
+	color: white;
+	padding: 0.5rem 1rem;
+	border-radius: 20px;
+	font-size: 0.9rem;
+	font-weight: 500;
+	z-index: 10000;
+	backdrop-filter: blur(4px);
+}
+
+/* Image caption in modal */
+.imageModalCaption {
+	margin-top: 1rem;
+	text-align: center;
+	color: white;
+	font-size: 1rem;
+	font-style: italic;
+	background: rgba(0, 0, 0, 0.5);
+	padding: 0.75rem 1rem;
+	border-radius: 8px;
+	max-width: 80%;
+	word-break: break-word;
 }
 
 @media (max-width: 768px) {
@@ -510,12 +695,56 @@
 		height: 20px;
 	}
 
+	.navButton {
+		padding: 0.625rem;
+	}
+
+	.prevButton,
+	.nextButton {
+		top: 50%;
+	}
+
+	.imageCounter {
+		bottom: 0.5rem;
+		right: 0.5rem;
+		font-size: 0.85rem;
+		padding: 0.4rem 0.8rem;
+	}
+
 	.imageModalContainer {
 		padding: 2.5rem 0.5rem 0.5rem;
 	}
 
 	.imageModalImage {
-		max-height: calc(100vh - 3rem);
-		border-radius: 4px;
+		max-height: calc(100vh - 6rem);
+		border-radius: 8px;
+	}
+
+	.imageModalCaption {
+		font-size: 0.95rem;
+		padding: 0.6rem 0.8rem;
+		max-width: 90%;
+	}
+}
+
+@media (max-width: 480px) {
+	.imageModalImage {
+		max-height: calc(100vh - 5rem);
+		border-radius: 6px;
+	}
+
+	.imageModalCaption {
+		font-size: 0.9rem;
+		padding: 0.5rem 0.7rem;
+	}
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+	.imageModalImage,
+	.navButton,
+	.imageModalClose {
+		transition: none;
+		animation: none;
 	}
 }

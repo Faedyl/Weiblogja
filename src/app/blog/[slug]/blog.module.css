@@ -1,5 +1,6 @@
 .container {
-	max-width: 1100px;
+	max-width: 1200px;
+	width: 100%;
 	margin: 0 auto;
 	padding: 2rem;
 	margin-left: auto;
@@ -29,8 +30,16 @@
 .article {
 	background: white;
 	border-radius: 12px;
-	padding: 3rem;
+	padding: 2rem;
 	box-shadow: 0 2px 0px rgba(0, 0, 0, 0.1);
+	width: 100%;
+	overflow-x: hidden;
+}
+
+@media (min-width: 769px) {
+	.article {
+		padding: 3rem;
+	}
 }
 
 .header {
@@ -107,17 +116,22 @@
 	margin-bottom: 1.5rem;
 }
 
-/* Responsive */
+/* Mobile responsiveness - ensure full width on mobile */
 @media (max-width: 768px) {
 	.container {
+		max-width: 100%;
+		width: 100%;
 		padding: 1rem;
 		padding-left: 1rem;
 		padding-right: 1rem;
 		padding-bottom: 90px;
+		padding-left: 1rem !important;
+		padding-right: 1rem !important;
 	}
 
 	.article {
 		padding: 2rem 1.5rem;
+		margin: 0 0.5rem;
 	}
 
 	.title {
@@ -126,6 +140,7 @@
 
 	.metadata {
 		gap: 1rem;
+		flex-direction: column;
 	}
 
 	.content {
@@ -133,14 +148,23 @@
 	}
 }
 
+/* Tablet responsiveness */
 @media (min-width: 769px) and (max-width: 1024px) {
 	.container {
-		max-width: 850px;
+		max-width: 100%;
+		width: 100%;
 		padding-left: calc(200px + 1.5rem);
 		padding-right: 1.5rem;
 	}
 
 	.title {
 		font-size: 2.2rem;
+	}
+}
+
+/* Ensure consistency with navbar max-width */
+@media (min-width: 1201px) {
+	.container {
+		max-width: 1200px;
 	}
 }

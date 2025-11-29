@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { BlogPost } from '@/lib/dynamodb'
 import ImagePreview from '@/app/components/ImagePreview/ImagePreview'
 import styles from './blogContent.module.css'
@@ -13,9 +13,50 @@ interface BlogContentProps {
 export default function BlogContent({ blog }: BlogContentProps) {
 	const contentRef = useRef<HTMLDivElement>(null)
 	const [modalImage, setModalImage] = useState<string | null>(null)
-	
+	const [currentImageIndex, setCurrentImageIndex] = useState<number>(0)
+	const [allImages, setAllImages] = useState<Array<{url: string, alt: string, caption?: string}>>([])
+
 	// Check if content is HTML (AI-generated) or plain text
 	const isHtmlContent = blog.ai_generated || blog.content.includes('<');
+
+	// Extract all images for lightbox navigation
+	useEffect(() => {
+		const images: Array<{url: string, alt: string, caption?: string}> = [];
+		
+		// Add images from blog.images array
+		if (blog.images && blog.images.length > 0) {
+			blog.images
+				.filter(img => img.url && img.url.trim() !== '')
+				.forEach(img => {
+					images.push({
+						url: img.url,
+						alt: img.alt,
+						caption: img.caption
+					});
+				});
+		}
+		
+		// Also extract images from HTML content if present
+		if (isHtmlContent && typeof document !== 'undefined') {
+			const tempDiv = document.createElement('div');
+			tempDiv.innerHTML = blog.content;
+			const imgElements = tempDiv.querySelectorAll('img.blog-image');
+			
+			imgElements.forEach(img => {
+				const src = img.getAttribute('src');
+				const alt = img.getAttribute('alt') || 'Blog image';
+				if (src && src.trim() !== '') {
+					images.push({
+						url: src,
+						alt: alt,
+						caption: '' // Could potentially extract caption from surrounding elements
+					});
+				}
+			});
+		}
+		
+		setAllImages(images);
+	}, [blog]);
 
 	// Add click handlers to blog-image elements
 	useEffect(() => {
@@ -24,7 +65,14 @@ export default function BlogContent({ blog }: BlogContentProps) {
 		const handleImageClick = (e: Event) => {
 			const target = e.target as HTMLElement
 			if (target.tagName === 'IMG' && target.classList.contains('blog-image')) {
-				setModalImage((target as HTMLImageElement).src)
+				const clickedSrc = (target as HTMLImageElement).src;
+				setModalImage(clickedSrc);
+				
+				// Find the index of the clicked image
+				const clickedIndex = allImages.findIndex(img => img.url === clickedSrc);
+				if (clickedIndex >= 0) {
+					setCurrentImageIndex(clickedIndex);
+				}
 			}
 		}
 
@@ -34,9 +82,35 @@ export default function BlogContent({ blog }: BlogContentProps) {
 		return () => {
 			content.removeEventListener('click', handleImageClick)
 		}
-	}, [isHtmlContent])
+	}, [isHtmlContent, allImages])
 
 	const closeModal = () => setModalImage(null)
+
+	const goToPreviousImage = () => {
+		setCurrentImageIndex(prev => prev === 0 ? allImages.length - 1 : prev - 1);
+	}
+
+	const goToNextImage = () => {
+		setCurrentImageIndex(prev => prev === allImages.length - 1 ? 0 : prev + 1);
+	}
+
+	// Handle keyboard navigation in modal
+	useEffect(() => {
+		if (!modalImage) return;
+
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') {
+				closeModal();
+			} else if (e.key === 'ArrowLeft') {
+				goToPreviousImage();
+			} else if (e.key === 'ArrowRight') {
+				goToNextImage();
+			}
+		};
+
+		window.addEventListener('keydown', handleKeyDown);
+		return () => window.removeEventListener('keydown', handleKeyDown);
+	}, [modalImage, currentImageIndex, allImages.length]);
 
 	// Parse content and insert images at specified positions
 	const renderContentWithImages = () => {
@@ -48,7 +122,7 @@ export default function BlogContent({ blog }: BlogContentProps) {
 				// For now, render HTML and images separately
 				return (
 					<>
-						<div 
+						<div
 							dangerouslySetInnerHTML={{ __html: blog.content }}
 							className={styles.htmlContent}
 						/>
@@ -57,11 +131,14 @@ export default function BlogContent({ blog }: BlogContentProps) {
 								<ImagePreview
 									src={image.url}
 									alt={image.alt}
-									width={600}
-									height={400}
+									width={800}
+									height={500}
 									className={styles.contentImage}
 									caption={image.caption}
-									sizes="(max-width: 480px) 100vw, (max-width: 768px) 90vw, 600px"
+									sizes="(max-width: 480px) 100vw, (max-width: 768px) 95vw, (max-width: 1024px) 800px, 800px"
+									priority={index === 0} // Prioritize first image
+									placeholder="blur"
+									quality={85}
 								/>
 							</div>
 						))}
@@ -71,7 +148,7 @@ export default function BlogContent({ blog }: BlogContentProps) {
 
 			// No images, just render HTML content
 			return (
-				<div 
+				<div
 					dangerouslySetInnerHTML={{ __html: blog.content }}
 					className={styles.htmlContent}
 				/>
@@ -104,14 +181,17 @@ export default function BlogContent({ blog }: BlogContentProps) {
 				content.push(
 					<div key={`image-${imageIndex}`} className={styles.imageContainer}>
 						<ImagePreview
-							src={image.url}
-							alt={image.alt}
-							width={600}
-							height={400}
-							className={styles.contentImage}
-							caption={image.caption}
-							sizes="(max-width: 480px) 100vw, (max-width: 768px) 90vw, 600px"
-						/>
+								src={image.url}
+								alt={image.alt}
+								width={800}
+								height={500}
+								className={styles.contentImage}
+								caption={image.caption}
+								sizes="(max-width: 480px) 100vw, (max-width: 768px) 95vw, (max-width: 1024px) 800px, 800px"
+								priority={imageIndex === 0} // Prioritize first image
+								placeholder="blur"
+								quality={85}
+							/>
 					</div>
 				)
 				imageIndex++
@@ -128,21 +208,77 @@ export default function BlogContent({ blog }: BlogContentProps) {
 			</div>
 
 			{modalImage && (
-				<div className={styles.imageModal} onClick={closeModal}>
+				<div 
+					className={styles.imageModal} 
+					onClick={closeModal}
+					role="dialog"
+					aria-modal="true"
+					aria-label="Image gallery"
+				>
 					<div className={styles.imageModalContent} onClick={(e) => e.stopPropagation()}>
 						<button
 							onClick={closeModal}
 							className={styles.imageModalClose}
-							title="Close preview"
+							title="Close gallery"
+							aria-label="Close image gallery"
 						>
 							<X size={24} />
 						</button>
+						
+						{/* Navigation buttons */}
+						{allImages.length > 1 && (
+							<>
+								<button
+									onClick={(e) => {
+										e.stopPropagation();
+										goToPreviousImage();
+									}}
+									className={`${styles.navButton} ${styles.prevButton}`}
+									title="Previous image"
+									aria-label="Previous image"
+								>
+									<ChevronLeft size={24} />
+								</button>
+								
+								<button
+									onClick={(e) => {
+										e.stopPropagation();
+										goToNextImage();
+									}}
+									className={`${styles.navButton} ${styles.nextButton}`}
+									title="Next image"
+									aria-label="Next image"
+								>
+									<ChevronRight size={24} />
+								</button>
+							</>
+						)}
+						
 						<div className={styles.imageModalContainer}>
-							<img
-								src={modalImage}
-								alt="Full size"
+							<ImagePreview
+								src={allImages[currentImageIndex]?.url || modalImage}
+								alt={allImages[currentImageIndex]?.alt || "Blog image"}
+								width={1200}
+								height={800}
 								className={styles.imageModalImage}
+								quality={90}
+								priority={true}
+								placeholder="blur"
 							/>
+							
+							{/* Caption for current image */}
+							{allImages[currentImageIndex]?.caption && (
+								<div className={styles.imageModalCaption}>
+									{allImages[currentImageIndex].caption}
+								</div>
+							)}
+							
+							{/* Counter */}
+							{allImages.length > 1 && (
+								<div className={styles.imageCounter}>
+									{currentImageIndex + 1} / {allImages.length}
+								</div>
+							)}
 						</div>
 					</div>
 				</div>
