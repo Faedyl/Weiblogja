@@ -31,7 +31,7 @@ export default function SearchBar({
 	const [total, setTotal] = useState(0)
 
 	const searchRef = useRef<HTMLDivElement>(null)
-	const debounceRef = useRef<NodeJS.Timeout>()
+	const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
 	// Close dropdown when clicking outside
 	useEffect(() => {

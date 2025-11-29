@@ -20,6 +20,9 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
                 email: "",
                 password: "",
                 name: "",
+                institution: "",
+                department: "",
+                orcid: "",
         });
 
         const router = useRouter();
@@ -33,6 +36,9 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
                                 email: formData.email,
                                 password: formData.password,
                                 name: formData.name,
+                                institution: formData.institution,
+                                department: formData.department,
+                                orcid: formData.orcid,
                                 isRegistering: (!isLogin).toString(),
                                 redirect: false,
                         });
@@ -53,7 +59,14 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
         const toggleMode = () => {
                 setIsLogin(!isLogin);
                 setError("");
-                setFormData({ email: "", password: "", name: "" });
+                setFormData({ 
+                        email: "", 
+                        password: "", 
+                        name: "",
+                        institution: "",
+                        department: "",
+                        orcid: "",
+                });
         };
 
         return (
@@ -79,18 +92,57 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
                                 <div className={styles.container}>
                                         <form onSubmit={handleSubmit} className={styles.form}>
                                                 {!isLogin && (
-                                                        <div className={styles.inputGroup}>
-                                                                <div className={styles.inputContainer}>
-                                                                        <input
-                                                                                type="text"
-                                                                                placeholder="Full Name"
-                                                                                value={formData.name}
-                                                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                                                className={styles.input}
-                                                                                required={!isLogin}
-                                                                        />
+                                                        <>
+                                                                <div className={styles.inputGroup}>
+                                                                        <div className={styles.inputContainer}>
+                                                                                <input
+                                                                                        type="text"
+                                                                                        placeholder="Full Name (as it appears on publications)"
+                                                                                        value={formData.name}
+                                                                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                                                        className={styles.input}
+                                                                                        required={!isLogin}
+                                                                                />
+                                                                        </div>
                                                                 </div>
-                                                        </div>
+
+                                                                <div className={styles.inputGroup}>
+                                                                        <div className={styles.inputContainer}>
+                                                                                <input
+                                                                                        type="text"
+                                                                                        placeholder="Institution/University *"
+                                                                                        value={formData.institution}
+                                                                                        onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
+                                                                                        className={styles.input}
+                                                                                        required={!isLogin}
+                                                                                />
+                                                                        </div>
+                                                                </div>
+
+                                                                <div className={styles.inputGroup}>
+                                                                        <div className={styles.inputContainer}>
+                                                                                <input
+                                                                                        type="text"
+                                                                                        placeholder="Department/Field (optional)"
+                                                                                        value={formData.department}
+                                                                                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                                                                                        className={styles.input}
+                                                                                />
+                                                                        </div>
+                                                                </div>
+
+                                                                <div className={styles.inputGroup}>
+                                                                        <div className={styles.inputContainer}>
+                                                                                <input
+                                                                                        type="text"
+                                                                                        placeholder="ORCID iD (optional, e.g., 0000-0002-1234-5678)"
+                                                                                        value={formData.orcid}
+                                                                                        onChange={(e) => setFormData({ ...formData, orcid: e.target.value })}
+                                                                                        className={styles.input}
+                                                                                />
+                                                                        </div>
+                                                                </div>
+                                                        </>
                                                 )}
 
                                                 <div className={styles.inputGroup}>

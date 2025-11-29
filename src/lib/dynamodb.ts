@@ -44,6 +44,9 @@ export interface BlogPost {
 		caption?: string
 		position: number // For ordering images within content
 	}>
+	// PDF source field
+	pdf_url?: string // S3 URL of original PDF (if converted from PDF)
+	pdf_hash?: string // SHA-256 hash of PDF file for duplicate detection
 }
 
 // Get recent published blogs with error handling
@@ -131,6 +134,46 @@ export async function getBlogBySlug(slug: string): Promise<BlogPost | null> {
 		return null;
 	} catch (error) {
 		console.error('Error fetching blog by slug:', error);
+		return null;
+	}
+}
+
+// Check if PDF hash already exists (duplicate detection)
+export async function getBlogByPdfHash(pdfHash: string): Promise<BlogPost | null> {
+	try {
+		const tableName = process.env.DYNAMODB_TEST_TABLE;
+
+		if (!tableName) {
+			logger.error('No dev table configured');
+			return null;
+		}
+
+		logger.debug(`Checking for duplicate PDF with hash: ${pdfHash.substring(0, 16)}...`);
+
+		const command = new ScanCommand({
+			TableName: tableName,
+			FilterExpression: "begins_with(PK, :blogPrefix) AND SK = :sk AND pdf_hash = :hash",
+			ExpressionAttributeValues: {
+				":blogPrefix": "BLOG#",
+				":sk": "METADATA",
+				":hash": pdfHash
+			}
+		});
+
+		const result = await dynamoDB.send(command);
+
+		if (result.Items && result.Items.length > 0) {
+			const blog = result.Items[0] as BlogPost;
+			logger.debug(`Found existing blog with matching PDF hash: ${blog.title}`);
+			return {
+				...blog,
+				slug: blog.PK.replace('BLOG#', '')
+			};
+		}
+
+		return null;
+	} catch (error) {
+		logger.error('Error checking for duplicate PDF:', error);
 		return null;
 	}
 }

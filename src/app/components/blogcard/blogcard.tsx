@@ -52,9 +52,6 @@ export default function BlogCard({ blog }: BlogCardProps) {
 						<h3 className={styles.title}>
 							{blog.title}
 						</h3>
-						{blog.ai_generated && (
-							<span className={styles.aiTag}>🤖 AI Generated</span>
-						)}
 					</div>
 					{/* Thumbnail - positioned absolutely */}
 					{blog.thumbnail_url && (
@@ -88,7 +85,7 @@ export default function BlogCard({ blog }: BlogCardProps) {
 					{/* Show tags if available */}
 					{blog.tags && blog.tags.length > 0 && (
 						<div className={styles.tags}>
-							{blog.tags.slice(0, 3).map((tag, index) => (
+							{blog.tags.map((tag, index) => (
 								<span key={index} className={styles.tag}>
 									{tag}
 								</span>

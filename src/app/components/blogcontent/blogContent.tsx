@@ -1,5 +1,9 @@
-import Image from 'next/image'
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import { X } from 'lucide-react'
 import { BlogPost } from '@/lib/dynamodb'
+import ImagePreview from '@/app/components/ImagePreview/ImagePreview'
 import styles from './blogContent.module.css'
 
 interface BlogContentProps {
@@ -7,8 +11,32 @@ interface BlogContentProps {
 }
 
 export default function BlogContent({ blog }: BlogContentProps) {
+	const contentRef = useRef<HTMLDivElement>(null)
+	const [modalImage, setModalImage] = useState<string | null>(null)
+	
 	// Check if content is HTML (AI-generated) or plain text
 	const isHtmlContent = blog.ai_generated || blog.content.includes('<');
+
+	// Add click handlers to blog-image elements
+	useEffect(() => {
+		if (!contentRef.current || !isHtmlContent) return
+
+		const handleImageClick = (e: Event) => {
+			const target = e.target as HTMLElement
+			if (target.tagName === 'IMG' && target.classList.contains('blog-image')) {
+				setModalImage((target as HTMLImageElement).src)
+			}
+		}
+
+		const content = contentRef.current
+		content.addEventListener('click', handleImageClick)
+
+		return () => {
+			content.removeEventListener('click', handleImageClick)
+		}
+	}, [isHtmlContent])
+
+	const closeModal = () => setModalImage(null)
 
 	// Parse content and insert images at specified positions
 	const renderContentWithImages = () => {
@@ -26,16 +54,15 @@ export default function BlogContent({ blog }: BlogContentProps) {
 						/>
 						{blog.images.filter(img => img.url && img.url.trim() !== '').map((image, index) => (
 							<div key={`image-${index}`} className={styles.imageContainer}>
-								<Image
+								<ImagePreview
 									src={image.url}
 									alt={image.alt}
-									width={800}
+									width={600}
 									height={400}
 									className={styles.contentImage}
+									caption={image.caption}
+									sizes="(max-width: 480px) 100vw, (max-width: 768px) 90vw, 600px"
 								/>
-								{image.caption && (
-									<p className={styles.imageCaption}>{image.caption}</p>
-								)}
 							</div>
 						))}
 					</>
@@ -76,16 +103,15 @@ export default function BlogContent({ blog }: BlogContentProps) {
 				const image = sortedImages[imageIndex]
 				content.push(
 					<div key={`image-${imageIndex}`} className={styles.imageContainer}>
-						<Image
+						<ImagePreview
 							src={image.url}
 							alt={image.alt}
-							width={800}
+							width={600}
 							height={400}
 							className={styles.contentImage}
+							caption={image.caption}
+							sizes="(max-width: 480px) 100vw, (max-width: 768px) 90vw, 600px"
 						/>
-						{image.caption && (
-							<p className={styles.imageCaption}>{image.caption}</p>
-						)}
 					</div>
 				)
 				imageIndex++
@@ -96,8 +122,31 @@ export default function BlogContent({ blog }: BlogContentProps) {
 	}
 
 	return (
-		<div className={styles.content}>
-			{renderContentWithImages()}
-		</div>
+		<>
+			<div className={styles.content} ref={contentRef}>
+				{renderContentWithImages()}
+			</div>
+
+			{modalImage && (
+				<div className={styles.imageModal} onClick={closeModal}>
+					<div className={styles.imageModalContent} onClick={(e) => e.stopPropagation()}>
+						<button
+							onClick={closeModal}
+							className={styles.imageModalClose}
+							title="Close preview"
+						>
+							<X size={24} />
+						</button>
+						<div className={styles.imageModalContainer}>
+							<img
+								src={modalImage}
+								alt="Full size"
+								className={styles.imageModalImage}
+							/>
+						</div>
+					</div>
+				</div>
+			)}
+		</>
 	)
 }

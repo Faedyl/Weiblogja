@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { Calendar, User, Eye, Bot } from 'lucide-react'
 import Link from 'next/link'
-import BlogContent from '@/app/components/blogcontent/blogContent'  // ← Add this import
+import BlogContent from '@/app/components/blogcontent/blogContent'
+import PDFPreview from '@/app/components/PDFPreview/PDFPreview'
+import ViewTracker from '@/app/components/ViewTracker/ViewTracker'
 import styles from './blog.module.css'
 
 interface BlogPageProps {
@@ -62,6 +64,7 @@ export default async function BlogPage({ params }: BlogPageProps) {
 
 	return (
 		<div className={styles.container}>
+			<ViewTracker slug={blog.slug} />
 			<Link href="/" className={styles.backLink}>
 				← Back to Home
 			</Link>
@@ -98,6 +101,12 @@ export default async function BlogPage({ params }: BlogPageProps) {
 						</div>
 					)}
 				</header>
+
+				{blog.pdf_url && (
+					<div className={styles.pdfSection}>
+						<PDFPreview pdfUrl={blog.pdf_url} />
+					</div>
+				)}
 
 				{/* 🔥 REPLACE THIS SECTION - Use BlogContent component */}
 				<BlogContent blog={blog} />

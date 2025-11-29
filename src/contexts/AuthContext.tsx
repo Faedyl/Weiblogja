@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                 id: session.user.id || 'user-' + Date.now(),
                                 username: session.user.name || 'User',
                                 email: session.user.email || '',
-                                role: (session.user.role as 'author' | 'visitor') || 'visitor'
+                                role: ((session.user as any).role as 'author' | 'visitor') || 'visitor'
                         }
                         logger.debug('✅ NextAuth session active:', userData)
                         setUser(userData)

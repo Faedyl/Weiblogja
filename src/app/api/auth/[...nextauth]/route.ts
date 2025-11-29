@@ -11,6 +11,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                                 email: { label: "Email", type: "email", placeholder: "your@email.com" },
                                 password: { label: "Password", type: "password" },
                                 name: { label: "Name", type: "text", placeholder: "Your full name" },
+                                institution: { label: "Institution", type: "text" },
+                                department: { label: "Department", type: "text" },
+                                orcid: { label: "ORCID", type: "text" },
                                 isRegistering: { label: "Is Registering", type: "hidden" },
                         },
                         async authorize(credentials) {
@@ -26,26 +29,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                                                 throw new Error("Name is required for registration")
                                         }
 
+                                        // Validate institution is provided (required for author verification)
+                                        if (!credentials.institution) {
+                                                throw new Error("Institution/University is required for registration")
+                                        }
+
                                         // Check if user already exists
                                         const existingUser = await getUserByEmail(credentials.email as string)
                                         if (existingUser) {
                                                 throw new Error("User already exists with this email")
                                         }
 
-                                        // Create new user
+                                        // Create new user with enhanced profile
                                         const newUser = await createUser(
                                                 credentials.email as string,
                                                 credentials.name as string,
-                                                credentials.password as string
+                                                credentials.password as string,
+                                                {
+                                                        institution: credentials.institution as string,
+                                                        department: credentials.department as string,
+                                                        orcid: credentials.orcid as string,
+                                                }
                                         )
 
-                                        logger.debug('📝 New user registered:', { email: newUser.email, role: newUser.role })
+                                        logger.debug('📝 New user registered:', { 
+                                                email: newUser.email, 
+                                                role: newUser.role,
+                                                institution: newUser.institution,
+                                                verificationStatus: newUser.verificationStatus
+                                        })
 
                                         return {
                                                 id: newUser.email,
                                                 email: newUser.email,
                                                 name: newUser.name,
-                                                role: newUser.role || 'visitor' // Add role here
+                                                role: newUser.role || 'visitor',
+                                                institution: newUser.institution,
+                                                verificationStatus: newUser.verificationStatus
                                         }
                                 } else {
                                         // Login flow

@@ -27,13 +27,13 @@ export async function GET() {
 		});
 
 		const result = await dynamoDB.send(command);
-		const blogs = (result.Items || []).map(blog => ({
+		const blogs = (result.Items || []).map((blog: any) => ({
 			...blog,
 			slug: blog.PK.replace('BLOG#', '')
 		}));
 
 		// Sort by created_at descending (newest first)
-		blogs.sort((a, b) => {
+		blogs.sort((a: any, b: any) => {
 			const dateA = new Date(a.created_at).getTime();
 			const dateB = new Date(b.created_at).getTime();
 			return dateB - dateA;

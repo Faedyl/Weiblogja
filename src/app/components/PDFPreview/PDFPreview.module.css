@@ -1,0 +1,246 @@
+.pdfButton {
+display: inline-flex;
+align-items: center;
+gap: 0.5rem;
+background: linear-gradient(135deg, #154D71 0%, #1a5f8a 100%);
+color: white;
+border: none;
+padding: 0.75rem 1.5rem;
+border-radius: 8px;
+font-size: 0.95rem;
+font-weight: 500;
+cursor: pointer;
+transition: all 0.2s ease;
+box-shadow: 0 2px 4px rgba(21, 77, 113, 0.2);
+}
+
+.pdfButton:hover {
+transform: translateY(-2px);
+box-shadow: 0 4px 8px rgba(21, 77, 113, 0.3);
+}
+
+.pdfButton:active {
+transform: translateY(0);
+}
+
+.modal {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: rgba(0, 0, 0, 0.8);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 9999;
+padding: 1rem;
+animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+from {
+opacity: 0;
+}
+to {
+opacity: 1;
+}
+}
+
+.modalContent {
+background: white;
+border-radius: 12px;
+width: 95%;
+max-width: 1200px;
+height: 90vh;
+display: flex;
+flex-direction: column;
+overflow: hidden;
+box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+from {
+transform: translateY(20px);
+opacity: 0;
+}
+to {
+transform: translateY(0);
+opacity: 1;
+}
+}
+
+.modalHeader {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 1.25rem 1.5rem;
+border-bottom: 1px solid #e5e7eb;
+background: #f9fafb;
+}
+
+.modalHeader h3 {
+display: flex;
+align-items: center;
+gap: 0.75rem;
+margin: 0;
+font-size: 1.25rem;
+color: #1a1a1a;
+}
+
+.modalHeader h3 svg {
+color: #154D71;
+}
+
+.headerActions {
+display: flex;
+align-items: center;
+gap: 0.5rem;
+}
+
+.openButton {
+display: inline-flex;
+align-items: center;
+gap: 0.5rem;
+padding: 0.5rem 1rem;
+background: #154D71;
+color: white;
+border: none;
+border-radius: 6px;
+font-size: 0.9rem;
+font-weight: 500;
+cursor: pointer;
+text-decoration: none;
+transition: background 0.2s ease;
+}
+
+.openButton:hover {
+background: #1a5f8a;
+}
+
+.closeButton {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+padding: 0.5rem;
+background: transparent;
+color: #666;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+background: #f3f4f6;
+color: #1a1a1a;
+}
+
+.pdfContainer {
+flex: 1;
+display: flex;
+overflow: hidden;
+background: #f5f5f5;
+}
+
+.pdfIframe {
+width: 100%;
+height: 100%;
+border: none;
+}
+
+@media (max-width: 768px) {
+.modal {
+padding: 0;
+}
+
+.modalContent {
+width: 100%;
+height: 100vh;
+max-height: 100vh;
+border-radius: 0;
+}
+
+.modalHeader {
+padding: 0.875rem 1rem;
+flex-wrap: wrap;
+}
+
+.modalHeader h3 {
+font-size: 1rem;
+gap: 0.5rem;
+}
+
+.modalHeader h3 svg {
+width: 18px;
+height: 18px;
+}
+
+.pdfButton {
+padding: 0.65rem 1.25rem;
+font-size: 0.9rem;
+width: 100%;
+justify-content: center;
+}
+
+.headerActions {
+gap: 0.375rem;
+}
+
+.openButton {
+padding: 0.4rem 0.75rem;
+font-size: 0.8rem;
+gap: 0.375rem;
+}
+
+.openButton svg {
+width: 16px;
+height: 16px;
+}
+
+.openButton span {
+display: none;
+}
+
+.closeButton {
+padding: 0.4rem;
+}
+
+.closeButton svg {
+width: 18px;
+height: 18px;
+}
+
+.pdfContainer {
+min-height: 0;
+}
+
+.pdfIframe {
+-webkit-overflow-scrolling: touch;
+}
+}
+
+@media (max-width: 480px) {
+.modalHeader {
+padding: 0.75rem 0.875rem;
+}
+
+.modalHeader h3 {
+font-size: 0.95rem;
+}
+
+.pdfButton {
+padding: 0.6rem 1rem;
+font-size: 0.85rem;
+}
+
+.headerActions {
+gap: 0.25rem;
+}
+
+.openButton {
+padding: 0.375rem 0.625rem;
+font-size: 0.75rem;
+}
+}

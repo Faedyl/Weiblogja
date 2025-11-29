@@ -1,7 +1,7 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import crypto from 'crypto';
 import { logger } from '@/lib/logger';
-
 export class S3Service {
 	private s3Client: S3Client;
 	private bucketName: string;
@@ -39,6 +39,7 @@ export class S3Service {
 				Key: filename,
 				Body: buffer,
 				ContentType: mimeType,
+
 				Metadata: {
 					alt: alt,
 					uploadedAt: new Date().toISOString(),
@@ -91,8 +92,8 @@ export class S3Service {
 				Key: key,
 				Body: buffer,
 				ContentType: 'application/pdf',
-			});
 
+			});
 			await this.s3Client.send(command);
 
 			const url = `https://${this.bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;

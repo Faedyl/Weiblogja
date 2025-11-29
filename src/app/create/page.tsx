@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { ConversionStatus, BlogConversionResult } from '@/types/pdf';
 import { FileText, Upload, CheckCircle, AlertCircle, Loader, Sparkles, Edit, Save, Eye, X, Plus } from 'lucide-react';
+import ImagePreview from '@/app/components/ImagePreview/ImagePreview';
 import styles from './create.module.css';
 
 export default function CreatePage() {
@@ -103,6 +104,18 @@ export default function CreatePage() {
 
 			if (!response.ok) {
 				const error = await response.json();
+				
+				// Handle duplicate PDF error specially
+				if (response.status === 409 && error.duplicate) {
+					throw new Error(
+						`This PDF has already been uploaded!\n\n` +
+						`Existing blog: "${error.existingBlog.title}"\n` +
+						`Created: ${new Date(error.existingBlog.createdAt).toLocaleDateString()}\n` +
+						`Author: ${error.existingBlog.author}\n\n` +
+						`View it at: ${error.existingBlog.url}`
+					);
+				}
+				
 				throw new Error(error.error || 'Upload failed');
 			}
 
@@ -192,9 +205,10 @@ export default function CreatePage() {
 				tags: result.tags,
 				summary: result.summary,
 				status: isDraft ? 'draft' : 'published',
-				ai_generated: true,
 				thumbnail_url: result.thumbnailUrl || '',
-				images: result.imageUrls || []
+				images: result.imageUrls || [],
+				pdf_url: result.pdfUrl || '',
+				pdf_hash: result.pdfHash || ''
 			};
 
 			const response = await fetch('/api/blogs', {
@@ -484,10 +498,15 @@ export default function CreatePage() {
 										<h3 className={styles.sectionTitle}>Extracted Images ({result.imageUrls.length})</h3>
 										<div className={styles.imagesGrid}>
 											{result.imageUrls.map((url, index) => (
-												<div key={index} className={styles.imagePreview}>
-													<img src={url} alt={`Extracted image ${index + 1}`} />
-													<p className={styles.imageLabel}>Page {index + 1}</p>
-												</div>
+												<ImagePreview 
+													key={index}
+													src={url}
+													alt={`Extracted image ${index + 1}`}
+													caption={`Page ${index + 1}`}
+													width={300}
+													height={200}
+													className={styles.imagePreviewItem}
+												/>
 											))}
 										</div>
 									</div>

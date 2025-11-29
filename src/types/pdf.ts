@@ -20,6 +20,16 @@ export interface PDFMetadata {
         author?: string;
         pages: number;
         creationDate?: Date;
+        authorDetection?: {
+                authors: Array<{
+                        name: string;
+                        affiliation?: string;
+                        email?: string;
+                        confidence: number;
+                }>;
+                source: 'metadata' | 'ai_extraction' | 'both';
+                totalAuthorsFound: number;
+        };
 }
 
 export interface LayoutSection {
@@ -37,6 +47,8 @@ export interface BlogConversionResult {
         sections: BlogSection[];
         imageUrls?: string[]; // S3 URLs of extracted images
         thumbnailUrl?: string; // Best image selected as thumbnail
+        pdfUrl?: string; // S3 URL of original PDF
+        pdfHash?: string; // SHA-256 hash for duplicate detection
 }
 
 export interface BlogSection {

@@ -9,12 +9,13 @@ export class GeminiService {
         constructor(apiKey: string) {
                 this.genAI = new GoogleGenerativeAI(apiKey);
                 this.model = this.genAI.getGenerativeModel({
-                        model: 'gemini-2.5-flash',  // Fast and cost-effective model
+                        model: 'gemini-2.0-flash-lite',  // Latest model with better JSON support
                         generationConfig: {
                                 temperature: 0.7,
                                 topK: 40,
                                 topP: 0.95,
                                 maxOutputTokens: 8192,
+                                responseMimeType: 'application/json',  // Force JSON output
                         },
                 });
         }
@@ -31,13 +32,17 @@ export class GeminiService {
                         const response = await result.response;
                         const text = response.text();
 
+                        // Log raw response for debugging
+                        logger.debug('Raw Gemini response length:', text.length);
+                        logger.debug('Raw Gemini response preview:', text.substring(0, 500));
+
                         const parsedResult = this.parseResponse(text);
-                        
+
                         // Select thumbnail from available images (use first image as thumbnail if available)
                         if (imageUrls.length > 0) {
                                 parsedResult.thumbnailUrl = imageUrls[0];
                         }
-                        
+
                         return parsedResult;
                 } catch (error) {
                         throw new Error(`Gemini conversion failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -47,19 +52,19 @@ export class GeminiService {
         private detectLanguage(text: string): string {
                 // Simple language detection based on character patterns
                 const sample = text.substring(0, 1000).toLowerCase();
-                
+
                 // Check for Indonesian words/patterns
                 const indonesianWords = ['dan', 'yang', 'dengan', 'untuk', 'dari', 'pada', 'dalam', 'adalah', 'ini', 'itu', 'dapat', 'akan', 'tidak', 'ada', 'atau'];
-                const indonesianCount = indonesianWords.filter(word => 
+                const indonesianCount = indonesianWords.filter(word =>
                         new RegExp(`\\b${word}\\b`, 'i').test(sample)
                 ).length;
-                
+
                 // Check for English words
                 const englishWords = ['the', 'and', 'for', 'with', 'this', 'that', 'from', 'have', 'been', 'which', 'their', 'about'];
-                const englishCount = englishWords.filter(word => 
+                const englishCount = englishWords.filter(word =>
                         new RegExp(`\\b${word}\\b`, 'i').test(sample)
                 ).length;
-                
+
                 // Return detected language or default to Indonesian
                 if (englishCount > indonesianCount && englishCount >= 3) {
                         return 'English';
@@ -78,12 +83,12 @@ export class GeminiService {
                 // Detect language from the extracted text
                 const detectedLanguage = this.detectLanguage(extraction.text);
                 const languageInstruction = this.getLanguageInstructions(detectedLanguage);
-                
+
                 // Create image reference list with page numbers
-                const imageReferences = extraction.images.map((img, index) => 
+                const imageReferences = extraction.images.map((img, index) =>
                         `- Image ${index + 1}: From page ${img.page} (URL will be: ${imageUrls[index] || '[pending]'})`
                 ).join('\n');
-                
+
                 return `You are an expert content writer specializing in transforming academic journals, research papers, and PDF documents into engaging, accessible blog posts.
 
 **Original Document Information:**
@@ -102,12 +107,12 @@ ${languageInstruction}
 Transform this document into a compelling blog post that maintains academic integrity while being accessible to a general audience.
 
 **CRITICAL - Language Requirements:**
-${detectedLanguage === 'English' ? 
-`- Write ALL content (title, summary, headings, body text) in ENGLISH
+${detectedLanguage === 'English' ?
+                                `- Write ALL content (title, summary, headings, body text) in ENGLISH
 - Maintain the same language as the source document
-- Use English terminology and expressions` 
-: 
-`- Tulis SEMUA konten (judul, ringkasan, heading, isi) dalam BAHASA INDONESIA
+- Use English terminology and expressions`
+                                :
+                                `- Tulis SEMUA konten (judul, ringkasan, heading, isi) dalam BAHASA INDONESIA
 - Gunakan bahasa yang natural dan mudah dipahami audiens Indonesia
 - Sesuaikan istilah teknis dengan konteks Indonesia
 - Target pembaca: Audiens Indonesia`}
@@ -182,19 +187,19 @@ IMPORTANT:
                 return layout
                         .map((section) => {
                                 let output = '';
-                                
+
                                 // Add page marker when page changes
                                 if (section.pageNumber > currentPage) {
                                         currentPage = section.pageNumber;
                                         output += `\n--- Page ${currentPage} ---\n`;
                                 }
-                                
+
                                 if (section.type === 'heading') {
                                         output += `\n## ${section.content}\n`;
                                 } else {
                                         output += section.content;
                                 }
-                                
+
                                 return output;
                         })
                         .join('\n');
@@ -224,8 +229,32 @@ IMPORTANT:
         private parseResponse(text: string): BlogConversionResult {
                 try {
                         // Remove markdown code block if present
-                        const jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-                        const parsed = JSON.parse(jsonText);
+                        let jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+                        // Try to find JSON object boundaries if response has extra text
+                        const firstBrace = jsonText.indexOf('{');
+                        const lastBrace = jsonText.lastIndexOf('}');
+
+                        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                                jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+                        }
+
+                        // Attempt to parse
+                        let parsed;
+                        try {
+                                parsed = JSON.parse(jsonText);
+                        } catch (parseError) {
+                                // If JSON is malformed, try to fix common issues
+                                logger.warn('Initial JSON parse failed, attempting repair...');
+
+                                // Log the problematic JSON for debugging
+                                logger.debug('Problematic JSON (first 1000 chars):', jsonText.substring(0, 1000));
+                                logger.debug('Problematic JSON (last 1000 chars):', jsonText.substring(jsonText.length - 1000));
+
+                                // Try to fix incomplete JSON by truncating at last complete field
+                                const fixedJson = this.attemptJsonRepair(jsonText);
+                                parsed = JSON.parse(fixedJson);
+                        }
 
                         return {
                                 title: parsed.title || 'Untitled Blog Post',
@@ -239,11 +268,45 @@ IMPORTANT:
                 }
         }
 
+        private attemptJsonRepair(jsonText: string): string {
+                // Remove any trailing incomplete strings or objects
+                let repaired = jsonText;
+
+                // If ends with incomplete quote, try to find last complete field
+                if (repaired.includes('"') && !repaired.endsWith('}')) {
+                        // Find the last complete field before the error
+                        const patterns = [
+                                /,\s*"[^"]*":\s*"[^"]*$/,  // Incomplete string field
+                                /,\s*"[^"]*":\s*\[.*$/,     // Incomplete array
+                                /,\s*"[^"]*$/,              // Incomplete key
+                        ];
+
+                        for (const pattern of patterns) {
+                                const match = repaired.match(pattern);
+                                if (match && match.index !== undefined) {
+                                        repaired = repaired.substring(0, match.index);
+                                        break;
+                                }
+                        }
+
+                        // Close any open arrays and the main object
+                        const openBrackets = (repaired.match(/\[/g) || []).length;
+                        const closeBrackets = (repaired.match(/\]/g) || []).length;
+                        repaired += ']'.repeat(openBrackets - closeBrackets);
+
+                        if (!repaired.endsWith('}')) {
+                                repaired += '}';
+                        }
+                }
+
+                return repaired;
+        }
+
         private sectionsToHTML(sections: BlogSection[]): string {
                 return sections
                         .map((section) => {
                                 let html = `<h2>${section.heading}</h2>\n<div>${section.content}</div>`;
-                                
+
                                 // Add images if present in this section
                                 if (section.images && section.images.length > 0) {
                                         const imageElements = section.images
@@ -251,7 +314,7 @@ IMPORTANT:
                                                 .join('\n');
                                         html += `\n${imageElements}`;
                                 }
-                                
+
                                 return html;
                         })
                         .join('\n');

@@ -17,20 +17,26 @@
 }
 
 .imageContainer {
-	margin: 2rem 0;
+	margin: 2rem auto;
 	text-align: center;
 	background: #f8f9fa;
 	border-radius: 12px;
 	padding: 1rem;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	overflow: hidden;
+	max-width: 800px;
 }
 
 .contentImage {
 	width: 100%;
 	height: auto;
+	max-width: 600px;
 	border-radius: 8px;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 	transition: transform 0.3s ease;
+	object-fit: cover;
+	display: block;
+	margin: 0 auto;
 }
 
 .contentImage:hover {
@@ -60,7 +66,7 @@
 	}
 
 	.imageContainer {
-		margin: 1.5rem -1rem;
+		margin: 1.5rem 0;
 		border-radius: 8px;
 		padding: 0.75rem;
 	}
@@ -83,8 +89,9 @@
 	}
 
 	.imageContainer {
-		margin: 1rem -0.5rem;
+		margin: 1rem 0;
 		padding: 0.5rem;
+		border-radius: 6px;
 	}
 
 	.imageCaption {
@@ -98,6 +105,29 @@
 	font-size: 1.1rem;
 	line-height: 1.8;
 	color: #333;
+}
+
+/* Style for blog-image class in AI-generated content */
+.htmlContent :global(.blog-image) {
+	width: auto;
+	max-width: 600px;
+	height: auto;
+	max-height: 400px;
+	border-radius: 8px;
+	margin: 2rem auto;
+	display: block;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	background: #f8f9fa;
+	padding: 1rem;
+	box-sizing: border-box;
+	cursor: pointer;
+	transition: transform 0.3s ease, box-shadow 0.3s ease;
+	object-fit: contain;
+}
+
+.htmlContent :global(.blog-image):hover {
+	transform: scale(1.02);
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
 /* HTML Typography */
@@ -313,6 +343,33 @@
 	.htmlContent > p:first-of-type::first-letter {
 		font-size: 2.5rem;
 	}
+
+	.htmlContent :global(.blog-image) {
+		margin: 1.5rem auto;
+		padding: 0.75rem;
+		border-radius: 6px;
+		max-width: 100%;
+		max-height: 300px;
+	}
+
+	.contentImage {
+		max-width: 100%;
+	}
+}
+
+@media (max-width: 480px) {
+	.htmlContent :global(.blog-image) {
+		margin: 1rem auto;
+		padding: 0.5rem;
+		border-radius: 6px;
+		max-width: 100%;
+		max-height: 250px;
+	}
+
+	.contentImage {
+		max-width: 100%;
+		border-radius: 6px;
+	}
 }
 
 /* Print styles */
@@ -345,5 +402,120 @@
 		box-shadow: none;
 		border: 1px solid #ddd;
 		break-inside: avoid;
+	}
+}
+
+/* Image Modal Styles */
+.imageModal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.95);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 9999;
+	padding: 1rem;
+	animation: fadeIn 0.2s ease;
+	overflow: auto;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.imageModalContent {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+	from {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+.imageModalClose {
+	position: fixed;
+	top: 1rem;
+	right: 1rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.75rem;
+	background: rgba(255, 255, 255, 0.9);
+	color: #1a1a1a;
+	border: none;
+	border-radius: 50%;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	z-index: 10000;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.imageModalClose:hover {
+	background: white;
+	transform: scale(1.1);
+}
+
+.imageModalContainer {
+	max-width: 100%;
+	max-height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 3rem 1rem 1rem;
+}
+
+.imageModalImage {
+	max-width: 100%;
+	max-height: calc(100vh - 4rem);
+	width: auto;
+	height: auto;
+	object-fit: contain;
+	border-radius: 8px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 768px) {
+	.imageModal {
+		padding: 0;
+	}
+
+	.imageModalClose {
+		top: 0.5rem;
+		right: 0.5rem;
+		padding: 0.625rem;
+	}
+
+	.imageModalClose svg {
+		width: 20px;
+		height: 20px;
+	}
+
+	.imageModalContainer {
+		padding: 2.5rem 0.5rem 0.5rem;
+	}
+
+	.imageModalImage {
+		max-height: calc(100vh - 3rem);
+		border-radius: 4px;
 	}
 }

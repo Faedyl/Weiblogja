@@ -93,6 +93,10 @@
 	gap: 0.5rem;
 }
 
+.pdfSection {
+	margin-top: 1.5rem;
+}
+
 .content {
 	font-size: 1.1rem;
 	line-height: 1.8;

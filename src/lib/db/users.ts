@@ -22,9 +22,32 @@ export interface User {
         role: 'visitor' | 'author' | 'admin'
         avatar?: string;
         bio?: string;
+        // Enhanced verification fields
+        alternativeNames?: string[]; // Other names user publishes under (maiden name, etc.)
+        orcid?: string; // ORCID researcher ID
+        institution?: string; // Academic institution
+        department?: string; // Department/field
+        researcherProfile?: string; // Google Scholar, ResearchGate, etc.
+        verificationStatus?: 'unverified' | 'pending' | 'verified';
+        verifiedAt?: string;
 }
 
-export async function createUser(email: string, name: string, password: string): Promise<User> {
+export interface CreateUserOptions {
+        email: string;
+        name: string;
+        password: string;
+        institution?: string;
+        department?: string;
+        orcid?: string;
+        alternativeNames?: string[];
+}
+
+export async function createUser(
+        email: string,
+        name: string,
+        password: string,
+        options?: Partial<CreateUserOptions>
+): Promise<User> {
         const hashedPassword = await bcrypt.hash(password, 12);
         const now = new Date().toISOString();
 
@@ -34,7 +57,12 @@ export async function createUser(email: string, name: string, password: string):
                 password: hashedPassword,
                 createdAt: now,
                 updatedAt: now,
-                role: "user",
+                role: "visitor",
+                verificationStatus: "unverified",
+                institution: options?.institution,
+                department: options?.department,
+                orcid: options?.orcid,
+                alternativeNames: options?.alternativeNames || [],
         };
 
         const command = new PutCommand({
@@ -84,6 +112,13 @@ export async function getUserByEmail(email: string): Promise<User | null> {
                         role: result.Item.role || 'visitor',
                         avatar: result.Item.avatar,
                         bio: result.Item.bio,
+                        alternativeNames: result.Item.alternativeNames || [],
+                        orcid: result.Item.orcid,
+                        institution: result.Item.institution,
+                        department: result.Item.department,
+                        researcherProfile: result.Item.researcherProfile,
+                        verificationStatus: result.Item.verificationStatus || 'unverified',
+                        verifiedAt: result.Item.verifiedAt,
                 };
         } catch (error) {
                 console.error("Error getting user:", error);
@@ -141,6 +176,13 @@ export async function getAllUsers(): Promise<User[]> {
                         role: item.role,
                         avatar: item.avatar,
                         bio: item.bio,
+                        alternativeNames: item.alternativeNames || [],
+                        orcid: item.orcid,
+                        institution: item.institution,
+                        department: item.department,
+                        researcherProfile: item.researcherProfile,
+                        verificationStatus: item.verificationStatus || 'unverified',
+                        verifiedAt: item.verifiedAt,
                 })) || [];
         } catch (error) {
                 console.error("Error getting all users:", error);

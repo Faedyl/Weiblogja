@@ -11,7 +11,13 @@ export async function POST(request: NextRequest) {
 			author_id = 'Faedyl',
 			category,
 			thumbnail_url,
-			images = [] // This is the key field you're missing!
+			images = [],
+			pdf_url,
+			pdf_hash,
+			tags = [],
+			summary,
+			status = 'published',
+			ai_generated = false
 		} = body
 
 		const currentTime = new Date().toISOString()
@@ -26,16 +32,20 @@ export async function POST(request: NextRequest) {
 			GSI1SK: currentTime,
 			title,
 			content,
+			summary,
 			author_id,
 			category,
-			status: 'published' as const,
+			tags,
+			status,
 			created_at: currentTime,
 			updated_at: currentTime,
 			views: 0,
-			ai_generated: false,
+			ai_generated,
 			slug,
 			thumbnail_url,
-			images // This will save your images array to DynamoDB!
+			images,
+			pdf_url,
+			pdf_hash
 		}
 
 		const command = new PutCommand({

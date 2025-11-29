@@ -5,10 +5,10 @@ import { DeleteCommand } from '@aws-sdk/lib-dynamodb'
 
 export async function DELETE(
         request: NextRequest,
-        { params }: { params: { slug: string } }
+        { params }: { params: Promise<{ slug: string }> }
 ) {
         try {
-                const { slug } = params
+                const { slug } = await params
 
                 const command = new DeleteCommand({
                         TableName: TABLES.BLOGS,
@@ -35,12 +35,12 @@ export async function DELETE(
 }
 export async function PUT(
         request: NextRequest,
-        { params }: { params: { slug: string } }
+        { params }: { params: Promise<{ slug: string }> }
 ) {
         try {
-                const { slug } = params
+                const { slug } = await params
                 const body = await request.json()
-                const { title, content, category, thumbnail_url, images, tags, summary, status } = body
+                const { title, content, category, thumbnail_url, images, tags, summary, status, pdf_url } = body
 
                 const updateExpression: string[] = []
                 const expressionAttributeValues: Record<string, unknown> = {}
@@ -86,6 +86,11 @@ export async function PUT(
                         updateExpression.push('#status = :status')
                         expressionAttributeNames['#status'] = 'status'
                         expressionAttributeValues[':status'] = status
+                }
+
+                if (pdf_url !== undefined) {
+                        updateExpression.push('pdf_url = :pdf_url')
+                        expressionAttributeValues[':pdf_url'] = pdf_url
                 }
 
                 updateExpression.push('updated_at = :updated_at')
