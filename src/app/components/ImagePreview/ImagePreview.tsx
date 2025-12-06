@@ -14,6 +14,7 @@ interface ImagePreviewProps {
   caption?: string
   sizes?: string
   priority?: boolean
+  quality?: number
   onLoad?: () => void
   onError?: () => void
   placeholder?: 'blur' | 'empty' | 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2ZXJzaW9uPSIxLjEiLz4='
@@ -28,6 +29,7 @@ export default function ImagePreview({
   caption,
   sizes = "(max-width: 480px) 100vw, (max-width: 768px) 100vw, 800px",
   priority = false,
+  quality = 85,
   onLoad,
   onError,
   placeholder = 'blur'
@@ -114,7 +116,7 @@ export default function ImagePreview({
             priority={priority}
             loading={priority ? "eager" : "lazy"}
             placeholder={placeholder === 'blur' ? 'empty' : placeholder}
-            quality={85}
+            quality={quality}
             fill={false}
           />
         )}
