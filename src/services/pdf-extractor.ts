@@ -552,7 +552,7 @@ export class PDFExtractor {
                                 !/^[0-9]+$/.test(line)) {
                                 
                                 // Check if it looks like a title (first letter capitalized, not all caps unless short)
-                                if (/^[A-Z]/.test(line) && (!line.toUpperCase() === line || line.length < 50)) {
+                                if (/^[A-Z]/.test(line) && (line.toUpperCase() !== line || line.length < 50)) {
                                         return line;
                                 }
                         }
