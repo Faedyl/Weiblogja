@@ -7,12 +7,6 @@ import { auth } from '@/app/api/auth/[...nextauth]/route';
 import crypto from 'crypto';
 import { logger } from '@/lib/logger';
 
-export const config = {
-        api: {
-                bodyParser: false,
-        },
-};
-
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 /**
