@@ -1,10 +1,22 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import Google from "next-auth/providers/google"
 import { getUserByEmail, createUser, verifyPassword } from "@/lib/db/users"
 import { logger } from "@/lib/logger"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
         providers: [
+                Google({
+                        clientId: process.env.GOOGLE_CLIENT_ID!,
+                        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+                        authorization: {
+                                params: {
+                                        prompt: "consent",
+                                        access_type: "offline",
+                                        response_type: "code"
+                                }
+                        }
+                }),
                 Credentials({
                         name: "credentials",
                         credentials: {
@@ -101,12 +113,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 error: "/profile",
         },
         callbacks: {
-                async jwt({ token, user }) {
+                async signIn({ user, account, profile }) {
+                        if (account?.provider === "google") {
+                                try {
+                                        const email = user.email!
+                                        let existingUser = await getUserByEmail(email)
+                                        
+                                        if (!existingUser) {
+                                                // Create new user from Google profile
+                                                await createUser(
+                                                        email,
+                                                        user.name || profile?.name || "User",
+                                                        Math.random().toString(36).slice(-12), // Random password for OAuth users
+                                                        {
+                                                                institution: (profile as any)?.hd || "" // Google Workspace domain if available
+                                                        }
+                                                )
+                                                logger.debug('📝 New user registered via Google OAuth:', { email })
+                                        }
+                                        return true
+                                } catch (error) {
+                                        logger.error('Google OAuth error:', error)
+                                        return false
+                                }
+                        }
+                        return true
+                },
+                async jwt({ token, user, account }) {
                         if (user) {
                                 token.id = user.id
                                 token.email = user.email
                                 token.name = user.name
-                                token.role = (user as any).role // Add role to JWT token
+                                
+                                // Fetch role from database for OAuth users
+                                if (account?.provider === "google") {
+                                        const dbUser = await getUserByEmail(user.email!)
+                                        token.role = dbUser?.role || 'visitor'
+                                } else {
+                                        token.role = (user as any).role
+                                }
                                 logger.debug('🎫 JWT token created with role:', token.role)
                         }
                         return token

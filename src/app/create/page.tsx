@@ -206,6 +206,7 @@ export default function CreatePage() {
 				summary: result.summary,
 				status: isDraft ? 'draft' : 'published',
 				thumbnail_url: result.thumbnailUrl || '',
+				logo_url: result.logoUrl || '',
 				images: result.imageUrls || [],
 				pdf_url: result.pdfUrl || '',
 				pdf_hash: result.pdfHash || ''

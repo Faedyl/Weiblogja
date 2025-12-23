@@ -74,6 +74,28 @@ export default async function BlogPage({ params }: BlogPageProps) {
 					<h1 className={styles.title}>{blog.title}</h1>
 
 					<div className={styles.metadata}>
+						{(blog.logo_url || blog.logo_urls) && (
+							<div className={styles.logoContainer}>
+								{blog.logo_urls && blog.logo_urls.length > 0 ? (
+									// Display all logos if logoUrls array exists
+									blog.logo_urls.map((logoUrl, index) => (
+										<img 
+											key={index}
+											src={logoUrl} 
+											alt={`Organization logo ${index + 1}`} 
+											className={styles.logo}
+										/>
+									))
+								) : blog.logo_url ? (
+									// Fallback to single logo for backward compatibility
+									<img 
+										src={blog.logo_url} 
+										alt="Organization logo" 
+										className={styles.logo}
+									/>
+								) : null}
+							</div>
+						)}
 						<div className={styles.metaItem}>
 							<User size={18} />
 							<span>{blog.author_id}</span>

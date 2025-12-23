@@ -15,21 +15,52 @@ export interface AuthorDetectionResult {
 }
 
 export class AIAuthorDetector {
-        private genAI: GoogleGenerativeAI;
-        private model: ReturnType<GoogleGenerativeAI['getGenerativeModel']>;
+        private genAI: GoogleGenerativeAI | null = null;
+        private model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null;
+        private maxRetries = 2;
+        private baseDelay = 1000; // 1 second
+        private openRouterApiKey?: string;
+        private static lastRequestTime = 0;
+        private static minRequestInterval = 4000; // 4 seconds between requests (15 RPM = 4s interval)
 
-        constructor(apiKey: string) {
-                this.genAI = new GoogleGenerativeAI(apiKey);
-                this.model = this.genAI.getGenerativeModel({
-                        model: 'gemini-2.0-flash-lite',
-                        generationConfig: {
-                                temperature: 0.3, // Lower temperature for more accurate extraction
-                                topK: 40,
-                                topP: 0.95,
-                                maxOutputTokens: 2048,
-                                responseMimeType: 'application/json',
-                        },
-                });
+        constructor(apiKey: string, openRouterApiKey?: string) {
+                if (apiKey) {
+                        this.genAI = new GoogleGenerativeAI(apiKey);
+                        this.model = this.genAI.getGenerativeModel({
+                                model: 'gemini-2.0-flash-lite',
+                                generationConfig: {
+                                        temperature: 0.3, // Lower temperature for more accurate extraction
+                                        topK: 40,
+                                        topP: 0.95,
+                                        maxOutputTokens: 2048,
+                                        responseMimeType: 'application/json',
+                                },
+                        });
+                }
+                this.openRouterApiKey = openRouterApiKey;
+        }
+
+        /**
+         * Delay helper for retry mechanism
+         */
+        private async delay(ms: number): Promise<void> {
+                return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        /**
+         * Wait to respect rate limits (static to work across all instances)
+         */
+        private async waitForRateLimit(): Promise<void> {
+                const now = Date.now();
+                const timeSinceLastRequest = now - AIAuthorDetector.lastRequestTime;
+                
+                if (timeSinceLastRequest < AIAuthorDetector.minRequestInterval) {
+                        const waitTime = AIAuthorDetector.minRequestInterval - timeSinceLastRequest;
+                        logger.debug(`⏱️ Rate limiting: waiting ${waitTime}ms before next request`);
+                        await this.delay(waitTime);
+                }
+                
+                AIAuthorDetector.lastRequestTime = Date.now();
         }
 
         /**
@@ -63,14 +94,21 @@ export class AIAuthorDetector {
                         // Fallback to metadata if AI fails
                         if (metadataAuthor) {
                                 const fallbackAuthors = this.parseMetadataAuthors(metadataAuthor);
-                                return {
-                                        authors: fallbackAuthors.slice(0, 3),
-                                        source: 'metadata',
-                                        totalAuthorsFound: fallbackAuthors.length,
-                                };
+                                if (fallbackAuthors.length > 0) {
+                                        return {
+                                                authors: fallbackAuthors.slice(0, 3),
+                                                source: 'metadata',
+                                                totalAuthorsFound: fallbackAuthors.length,
+                                        };
+                                }
                         }
 
-                        throw new Error('Failed to detect authors from PDF');
+                        // Return empty result instead of throwing - let the upload route handle it
+                        return {
+                                authors: [],
+                                source: 'metadata',
+                                totalAuthorsFound: 0,
+                        };
                 }
         }
 
@@ -78,14 +116,48 @@ export class AIAuthorDetector {
          * Use Gemini AI to extract authors from PDF content
          */
         private async extractAuthorsWithAI(pdfText: string): Promise<DetectedAuthor[]> {
-                // Take first 5000 characters (first few pages) where authors are typically listed
-                const contentSample = pdfText.substring(0, 5000);
+                // Try Gemini first
+                if (this.model) {
+                        try {
+                                return await this.extractAuthorsWithGemini(pdfText);
+                        } catch (error: any) {
+                                logger.warn('Gemini author extraction failed, trying OpenRouter fallback...', error);
+                        }
+                }
+
+                // Fallback to OpenRouter if Gemini fails or is not available
+                if (this.openRouterApiKey) {
+                        try {
+                                return await this.extractAuthorsWithOpenRouter(pdfText);
+                        } catch (error) {
+                                logger.error('OpenRouter author extraction also failed:', error);
+                        }
+                }
+
+                // All methods failed
+                return [];
+        }
+
+        /**
+         * Extract authors using Gemini
+         */
+        private async extractAuthorsWithGemini(pdfText: string): Promise<DetectedAuthor[]> {
+                if (!this.model) {
+                        throw new Error('Gemini model not initialized');
+                }
+                
+                // Wait for rate limit before making request
+                await this.waitForRateLimit();
+                
+                // Take first 2000 characters (approximately first page) where authors are typically listed
+                // This is more token-efficient since authors are almost always on the first page
+                const contentSample = pdfText.substring(0, 2000);
 
                 const prompt = `You are an expert at extracting author information from academic papers and journal articles.
 
 **Task:** Extract ALL author names from this PDF content. Authors are typically listed at the beginning of academic papers.
 
-**PDF Content (first few pages):**
+**PDF Content (first page):**
 ${contentSample}
 
 **Instructions:**
@@ -126,33 +198,208 @@ ${contentSample}
 - If no authors found, return empty array []
 - Respond ONLY with valid JSON array, no additional text`;
 
-                const result = await this.model.generateContent(prompt);
-                const response = await result.response;
-                const text = response.text();
+                // Retry logic with exponential backoff
+                let lastError: any;
+                for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+                        try {
+                                if (attempt > 0) {
+                                        const delayMs = this.baseDelay * Math.pow(2, attempt - 1);
+                                        logger.debug(`Retrying AI author extraction (attempt ${attempt + 1}/${this.maxRetries + 1}) after ${delayMs}ms delay...`);
+                                        await this.delay(delayMs);
+                                }
 
-                logger.debug('AI author extraction response:', text.substring(0, 500));
+                                const result = await this.model.generateContent(prompt);
+                                const response = await result.response;
+                                const text = response.text();
 
-                // Parse AI response
-                const parsed = JSON.parse(text);
+                                logger.debug('AI author extraction response:', text.substring(0, 500));
 
-                if (!Array.isArray(parsed)) {
-                        logger.warn('AI returned non-array response, trying to extract array');
-                        return [];
+                                // Parse AI response - handle various response formats
+                                let parsed;
+                                try {
+                                        parsed = JSON.parse(text);
+                                } catch (parseError) {
+                                        // Try to extract JSON array from markdown code blocks
+                                        const jsonMatch = text.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+                                        if (jsonMatch) {
+                                                parsed = JSON.parse(jsonMatch[1]);
+                                        } else {
+                                                // Try to find any JSON array in the text
+                                                const arrayMatch = text.match(/\[[\s\S]*\]/);
+                                                if (arrayMatch) {
+                                                        parsed = JSON.parse(arrayMatch[0]);
+                                                } else {
+                                                        logger.warn('Could not extract JSON from AI response');
+                                                        return [];
+                                                }
+                                        }
+                                }
+
+                                if (!Array.isArray(parsed)) {
+                                        logger.warn('AI returned non-array response, trying to extract array');
+                                        return [];
+                                }
+
+                                // Validate and clean results
+                                const validAuthors: DetectedAuthor[] = parsed
+                                        .filter((author: any) => author.name && author.name.trim().length > 0)
+                                        .map((author: any) => ({
+                                                name: author.name.trim(),
+                                                affiliation: author.affiliation?.trim() || undefined,
+                                                email: author.email?.trim() || undefined,
+                                                confidence: Math.min(100, Math.max(0, author.confidence || 50)),
+                                        }))
+                                        .sort((a: DetectedAuthor, b: DetectedAuthor) => b.confidence - a.confidence); // Sort by confidence
+
+                                        logger.debug(`AI detected ${validAuthors.length} authors`);
+                                        return validAuthors;
+                        } catch (error: any) {
+                                lastError = error;
+                                
+                                // Check if it's a rate limit error (429)
+                                const isRateLimit = error?.status === 429 || 
+                                                   error?.message?.includes('429') ||
+                                                   error?.message?.includes('quota') ||
+                                                   error?.message?.includes('rate limit');
+
+                                if (isRateLimit && attempt < this.maxRetries) {
+                                        logger.warn(`Rate limit hit, will retry (attempt ${attempt + 1}/${this.maxRetries + 1})`);
+                                        continue;
+                                }
+
+                                // For other errors or last attempt, throw to trigger OpenRouter fallback
+                                throw lastError;
+                        }
                 }
 
-                // Validate and clean results
-                const validAuthors: DetectedAuthor[] = parsed
-                        .filter((author: any) => author.name && author.name.trim().length > 0)
-                        .map((author: any) => ({
-                                name: author.name.trim(),
-                                affiliation: author.affiliation?.trim() || undefined,
-                                email: author.email?.trim() || undefined,
-                                confidence: Math.min(100, Math.max(0, author.confidence || 50)),
-                        }))
-                        .sort((a: DetectedAuthor, b: DetectedAuthor) => b.confidence - a.confidence); // Sort by confidence
+                // All retries failed, throw to trigger fallback
+                throw lastError || new Error('Gemini author extraction failed after retries');
+        }
 
-                logger.debug(`AI detected ${validAuthors.length} authors`);
-                return validAuthors;
+        /**
+         * Extract authors using OpenRouter as fallback
+         */
+        private async extractAuthorsWithOpenRouter(pdfText: string): Promise<DetectedAuthor[]> {
+                if (!this.openRouterApiKey) {
+                        throw new Error('OpenRouter API key not configured');
+                }
+
+                // Wait for rate limit before making request
+                await this.waitForRateLimit();
+
+                const contentSample = pdfText.substring(0, 2000);
+
+                const prompt = `You are an expert at extracting author information from academic papers and journal articles.
+
+**Task:** Extract ALL author names from this PDF content. Authors are typically listed at the beginning of academic papers.
+
+**PDF Content (first page):**
+${contentSample}
+
+**Instructions:**
+1. Find ALL author names listed in the document
+2. Extract their full names (first name and last name)
+3. Extract affiliations if mentioned (university, institution, department)
+4. Extract email addresses if mentioned
+5. List authors in the ORDER they appear in the document
+6. Assign confidence score (0-100) based on:
+   - 100: Name explicitly labeled as "Author:", "By:", or in author section
+   - 90: Name appears in typical author position (after title, before abstract)
+   - 80: Name with affiliation/email nearby
+   - 70: Name appears in first page but position unclear
+   - 50: Uncertain if person is an author
+
+**Output Format (JSON array):**
+[
+  {
+    "name": "Full Name",
+    "affiliation": "University/Institution (if found)",
+    "email": "email@domain.com (if found)",
+    "confidence": 95
+  }
+]
+
+**Important:**
+- Return up to 10 authors (if more exist, prioritize by confidence)
+- Do NOT include editors, reviewers, or cited authors
+- Only include people who are actual authors of THIS paper
+- If no authors found, return empty array []
+- Respond ONLY with valid JSON array, no additional text`;
+
+                try {
+                        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                                method: 'POST',
+                                headers: {
+                                        'Authorization': `Bearer ${this.openRouterApiKey}`,
+                                        'Content-Type': 'application/json',
+                                        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+                                        'X-Title': 'Weiblogja PDF Converter'
+                                },
+                                body: JSON.stringify({
+                                        model: 'meta-llama/llama-3.2-3b-instruct:free',
+                                        messages: [{ role: 'user', content: prompt }],
+                                        temperature: 0.3,
+                                        max_tokens: 2048,
+                                        response_format: { type: 'json_object' }
+                                })
+                        });
+
+                        if (!response.ok) {
+                                const errorText = await response.text();
+                                throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
+                        }
+
+                        const data = await response.json();
+                        const text = data.choices[0]?.message?.content || '[]';
+
+                        logger.debug('OpenRouter author extraction response:', text.substring(0, 500));
+
+                        let parsed;
+                        try {
+                                parsed = JSON.parse(text);
+                        } catch (parseError) {
+                                // Try to extract JSON from the response
+                                const arrayMatch = text.match(/\[[\s\S]*\]/);
+                                if (arrayMatch) {
+                                        parsed = JSON.parse(arrayMatch[0]);
+                                } else {
+                                        logger.warn('Could not extract JSON from OpenRouter response');
+                                        return [];
+                                }
+                        }
+
+                        // Handle different response formats
+                        let authorsArray: any[];
+                        if (Array.isArray(parsed)) {
+                                authorsArray = parsed;
+                        } else if (parsed.authors && Array.isArray(parsed.authors)) {
+                                // OpenRouter might return an object with an array property
+                                authorsArray = parsed.authors;
+                        } else if (parsed.name) {
+                                // OpenRouter returned a single author object, wrap it in an array
+                                logger.debug('OpenRouter returned single author object, wrapping in array');
+                                authorsArray = [parsed];
+                        } else {
+                                logger.warn('OpenRouter returned unrecognized format:', JSON.stringify(parsed).substring(0, 200));
+                                return [];
+                        }
+
+                        const validAuthors: DetectedAuthor[] = authorsArray
+                                .filter((author: any) => author.name && author.name.trim().length > 0)
+                                .map((author: any) => ({
+                                        name: author.name.trim(),
+                                        affiliation: author.affiliation?.trim() || undefined,
+                                        email: author.email?.trim() || undefined,
+                                        confidence: Math.min(100, Math.max(0, author.confidence || 50)),
+                                }))
+                                .sort((a: DetectedAuthor, b: DetectedAuthor) => b.confidence - a.confidence);
+
+                        logger.info(`✓ OpenRouter detected ${validAuthors.length} authors`);
+                        return validAuthors;
+                } catch (error) {
+                        logger.error('OpenRouter author extraction error:', error);
+                        throw error;
+                }
         }
 
         /**
@@ -163,11 +410,31 @@ ${contentSample}
                         return [];
                 }
 
+                // Filter out common invalid author values
+                const invalidPatterns = [
+                        /^corresponding\s*(email|author)?$/i,
+                        /^email$/i,
+                        /^author$/i,
+                        /^unknown$/i,
+                        /^n\/a$/i,
+                        /^\s*$/,
+                ];
+
+                const isInvalid = invalidPatterns.some(pattern => pattern.test(metadataAuthor.trim()));
+                if (isInvalid) {
+                        logger.debug(`Filtering out invalid metadata author: "${metadataAuthor}"`);
+                        return [];
+                }
+
                 // Split by common delimiters
                 const authorList = metadataAuthor.split(/[,;]|\band\b|&/).map(a => a.trim());
 
                 return authorList
-                        .filter(name => name.length > 0)
+                        .filter(name => {
+                                // Must have at least 2 characters and not match invalid patterns
+                                if (name.length < 2) return false;
+                                return !invalidPatterns.some(pattern => pattern.test(name));
+                        })
                         .map(name => ({
                                 name: name.trim(),
                                 confidence: 70, // Metadata confidence is medium (can be outdated or incomplete)

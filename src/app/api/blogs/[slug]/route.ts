@@ -40,7 +40,7 @@ export async function PUT(
         try {
                 const { slug } = await params
                 const body = await request.json()
-                const { title, content, category, thumbnail_url, images, tags, summary, status, pdf_url } = body
+                const { title, content, category, thumbnail_url, logo_url, images, tags, summary, status, pdf_url } = body
 
                 const updateExpression: string[] = []
                 const expressionAttributeValues: Record<string, unknown> = {}
@@ -65,6 +65,11 @@ export async function PUT(
                 if (thumbnail_url) {
                         updateExpression.push('thumbnail_url = :thumbnail_url')
                         expressionAttributeValues[':thumbnail_url'] = thumbnail_url
+                }
+
+                if (logo_url) {
+                        updateExpression.push('logo_url = :logo_url')
+                        expressionAttributeValues[':logo_url'] = logo_url
                 }
 
                 if (images !== undefined) {

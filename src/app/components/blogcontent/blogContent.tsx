@@ -19,6 +19,20 @@ export default function BlogContent({ blog }: BlogContentProps) {
 	// Check if content is HTML (AI-generated) or plain text
 	const isHtmlContent = blog.ai_generated || blog.content.includes('<');
 
+	// Validate URL helper
+	const isValidUrl = (url: string): boolean => {
+		if (!url || url.trim() === '') return false
+		// Check for placeholder patterns
+		if (url.includes('{{') || url.includes('}}')) return false
+		try {
+			new URL(url)
+			return true
+		} catch {
+			// Check if it's a valid relative path
+			return url.startsWith('/') || url.startsWith('./') || url.startsWith('../')
+		}
+	}
+
 	// Extract all images for lightbox navigation
 	useEffect(() => {
 		const images: Array<{url: string, alt: string, caption?: string}> = [];
@@ -26,7 +40,7 @@ export default function BlogContent({ blog }: BlogContentProps) {
 		// Add images from blog.images array
 		if (blog.images && blog.images.length > 0) {
 			blog.images
-				.filter(img => img.url && img.url.trim() !== '')
+				.filter(img => img.url && img.url.trim() !== '' && isValidUrl(img.url))
 				.forEach(img => {
 					images.push({
 						url: img.url,
@@ -45,7 +59,7 @@ export default function BlogContent({ blog }: BlogContentProps) {
 			imgElements.forEach(img => {
 				const src = img.getAttribute('src');
 				const alt = img.getAttribute('alt') || 'Blog image';
-				if (src && src.trim() !== '') {
+				if (src && src.trim() !== '' && isValidUrl(src)) {
 					images.push({
 						url: src,
 						alt: alt,

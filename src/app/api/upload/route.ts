@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { logger } from '@/lib/logger'
+import { withRateLimit } from '@/lib/rate-limit-middleware'
 
 const s3Client = new S3Client({
 	region: process.env.AWS_REGION!,
@@ -14,7 +15,8 @@ const s3Client = new S3Client({
 })
 
 export async function POST(request: NextRequest) {
-	try {
+	return withRateLimit(request, async (req) => {
+		try {
 		logger.debug('🚀 Upload API called at:', new Date().toISOString())
 
 		const body = await request.json()
@@ -80,4 +82,5 @@ export async function POST(request: NextRequest) {
 			{ status: 500 }
 		)
 	}
+	});
 }

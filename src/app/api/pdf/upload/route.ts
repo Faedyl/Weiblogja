@@ -3,6 +3,7 @@ import { PDFExtractor } from '@/services/pdf-extractor';
 import { GeminiService } from '@/services/gemini-service';
 import { S3Service } from '@/services/s3-service';
 import { auth } from '@/app/api/auth/[...nextauth]/route';
+import { withRateLimit } from '@/lib/rate-limit-middleware';
 
 import crypto from 'crypto';
 import { logger } from '@/lib/logger';
@@ -148,7 +149,8 @@ async function verifyAuthor(
 }
 
 export async function POST(request: NextRequest) {
-        try {
+        return withRateLimit(request, async (req) => {
+                try {
                 // Get authenticated user session
                 const session = await auth();
                 if (!session || !session.user) {
@@ -233,7 +235,10 @@ export async function POST(request: NextRequest) {
 
                 logger.debug('Step 3: Extracting PDF content...');
                 // Extract PDF content (including images) with AI author detection
-                const extractor = new PDFExtractor(process.env.GOOGLE_GEMINI_API_KEY);
+                const extractor = new PDFExtractor(
+                        process.env.GOOGLE_GEMINI_API_KEY, 
+                        process.env.OPENROUTER_API_KEY
+                );
                 const extraction = await extractor.extractFromBuffer(buffer);
 
                 // AUTHOR VERIFICATION - Check if PDF author matches logged-in user
@@ -365,12 +370,31 @@ export async function POST(request: NextRequest) {
                         }
                 }
 
-                logger.debug('Step 7: Converting to blog with Gemini AI...');
-                // Convert to blog using Gemini
-                const geminiService = new GeminiService(
-                        process.env.GOOGLE_GEMINI_API_KEY!
-                );
-                const blogResult = await geminiService.convertPDFToBlog(extraction, imageUrls);
+                logger.debug('Step 7: Converting to blog with AI...');
+                // Convert to blog using Gemini with OpenRouter fallback
+                let blogResult;
+                let aiService: 'gemini' | 'openrouter' = 'gemini';
+                
+                try {
+                        const geminiService = new GeminiService(
+                                process.env.GOOGLE_GEMINI_API_KEY!
+                        );
+                        blogResult = await geminiService.convertPDFToBlog(extraction, imageUrls);
+                } catch (geminiError) {
+                        logger.warn('Gemini conversion failed, falling back to OpenRouter with DeepSeek:', geminiError);
+                        
+                        if (!process.env.OPENROUTER_API_KEY) {
+                                throw new Error('Gemini failed and no OpenRouter API key configured');
+                        }
+                        
+                        const { OpenRouterService } = await import('@/services/openrouter-service');
+                        const openRouterService = new OpenRouterService(
+                                process.env.OPENROUTER_API_KEY
+                        );
+                        blogResult = await openRouterService.convertPDFToBlog(extraction, imageUrls);
+                        aiService = 'openrouter';
+                        logger.info('✓ Successfully converted using OpenRouter (DeepSeek R1)');
+                }
 
                 // Replace image placeholders with actual S3 URLs
                 let finalContent = blogResult.content;
@@ -378,17 +402,52 @@ export async function POST(request: NextRequest) {
                         finalContent = finalContent.replace(`{{IMAGE_${index}}}`, url);
                 });
 
-                // Step 8: Use Gemini AI to select the best thumbnail
+                // Additional safety: Remove any logo image tags from content if logoUrls are set
+                const allLogoUrls = blogResult.logoUrls || (blogResult.logoUrl ? [blogResult.logoUrl] : []);
+                if (allLogoUrls.length > 0) {
+                        logger.debug(`Removing ${allLogoUrls.length} logo(s) from content if present...`);
+                        allLogoUrls.forEach(logoUrl => {
+                                // Remove any <img> tags that reference the logo URL
+                                const logoUrlEscaped = logoUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                const logoImgRegex = new RegExp(`<img[^>]*src=["']${logoUrlEscaped}["'][^>]*class=["']blog-image["'][^>]*>`, 'gi');
+                                finalContent = finalContent.replace(logoImgRegex, '');
+                                
+                                // Also remove with reversed attributes (class before src)
+                                const logoImgRegex2 = new RegExp(`<img[^>]*class=["']blog-image["'][^>]*src=["']${logoUrlEscaped}["'][^>]*>`, 'gi');
+                                finalContent = finalContent.replace(logoImgRegex2, '');
+                        });
+                        logger.debug('✓ Logo(s) removed from content if they were present');
+                }
+
+                // Step 8: Use AI to select the best thumbnail
                 let thumbnailUrl: string | undefined;
                 if (imageUrls.length > 0) {
-                        logger.debug('Step 8: Selecting best thumbnail with Gemini AI...');
-                        thumbnailUrl = await geminiService.selectBestThumbnail(
-                                blogResult.title,
-                                blogResult.summary,
-                                extraction.images.filter(img => img.data && img.data.length > 0),
-                                imageUrls
-                        );
-                        logger.debug(`✓ Selected thumbnail: ${thumbnailUrl}`);
+                        logger.debug(`Step 8: Selecting best thumbnail with ${aiService === 'gemini' ? 'Gemini' : 'OpenRouter'} AI...`);
+                        
+                        try {
+                                if (aiService === 'gemini') {
+                                        const geminiService = new GeminiService(process.env.GOOGLE_GEMINI_API_KEY!);
+                                        thumbnailUrl = await geminiService.selectBestThumbnail(
+                                                blogResult.title,
+                                                blogResult.summary,
+                                                extraction.images.filter(img => img.data && img.data.length > 0),
+                                                imageUrls
+                                        );
+                                } else {
+                                        const { OpenRouterService } = await import('@/services/openrouter-service');
+                                        const openRouterService = new OpenRouterService(process.env.OPENROUTER_API_KEY!);
+                                        thumbnailUrl = await openRouterService.selectBestThumbnail(
+                                                blogResult.title,
+                                                blogResult.summary,
+                                                extraction.images.filter(img => img.data && img.data.length > 0),
+                                                imageUrls
+                                        );
+                                }
+                                logger.debug(`✓ Selected thumbnail: ${thumbnailUrl}`);
+                        } catch (thumbnailError) {
+                                logger.warn('Thumbnail selection failed, using first image:', thumbnailError);
+                                thumbnailUrl = imageUrls[0];
+                        }
                 }
 
                 // Add image URLs, PDF URL, and hash to the result
@@ -397,6 +456,7 @@ export async function POST(request: NextRequest) {
                         content: finalContent, // Content with actual S3 URLs
                         imageUrls, // S3 URLs of extracted images
                         thumbnailUrl, // Best thumbnail selected by AI
+                        logoUrl: blogResult.logoUrl, // Logo URL for metadata section
                         pdfUrl, // S3 URL of original PDF
                         pdfHash, // SHA-256 hash for duplicate detection
                 };
@@ -411,6 +471,7 @@ export async function POST(request: NextRequest) {
                         imageCount: imageUrls.length,
                         pdfUrl, // Include PDF URL for viewing/downloading
                         pdfHash, // Include hash for storage in database
+                        logoUrl: blogResult.logoUrl, // Include logo URL
                 });
         } catch (error: unknown) {
                 logger.error('PDF upload error:', error);
@@ -424,4 +485,5 @@ export async function POST(request: NextRequest) {
                         { status: isValidationError ? 400 : 500 }
                 );
         }
+        });
 }

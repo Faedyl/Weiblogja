@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { dynamoDB, TABLES } from '@/lib/dynamodb'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
+import { withRateLimit } from '@/lib/rate-limit-middleware'
 
 export async function POST(request: NextRequest) {
-	try {
+	return withRateLimit(request, async (req) => {
+		try {
 		const body = await request.json()
 		const {
 			title,
@@ -11,6 +13,7 @@ export async function POST(request: NextRequest) {
 			author_id = 'Faedyl',
 			category,
 			thumbnail_url,
+			logo_url,
 			images = [],
 			pdf_url,
 			pdf_hash,
@@ -43,6 +46,7 @@ export async function POST(request: NextRequest) {
 			ai_generated,
 			slug,
 			thumbnail_url,
+			logo_url,
 			images,
 			pdf_url,
 			pdf_hash
@@ -67,4 +71,5 @@ export async function POST(request: NextRequest) {
 			{ status: 500 }
 		)
 	}
+	});
 }

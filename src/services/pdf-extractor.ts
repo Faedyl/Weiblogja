@@ -5,9 +5,9 @@ import { AIAuthorDetector, type AuthorDetectionResult } from './ai-author-detect
 export class PDFExtractor {
 	private aiAuthorDetector?: AIAuthorDetector;
 
-	constructor(geminiApiKey?: string) {
-		if (geminiApiKey) {
-			this.aiAuthorDetector = new AIAuthorDetector(geminiApiKey);
+	constructor(geminiApiKey?: string, openRouterApiKey?: string) {
+		if (geminiApiKey || openRouterApiKey) {
+			this.aiAuthorDetector = new AIAuthorDetector(geminiApiKey || '', openRouterApiKey);
 		}
 	}
         async extractFromBuffer(buffer: Buffer): Promise<PDFExtractionResult> {

@@ -39,6 +39,20 @@ export default function ImagePreview({
   const [hasError, setHasError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
 
+  // Validate URL
+  const isValidUrl = (url: string): boolean => {
+    if (!url || url.trim() === '') return false
+    // Check for placeholder patterns
+    if (url.includes('{{') || url.includes('}}')) return false
+    try {
+      new URL(url)
+      return true
+    } catch {
+      // Check if it's a valid relative path
+      return url.startsWith('/') || url.startsWith('./') || url.startsWith('../')
+    }
+  }
+
   const openPreview = () => setIsOpen(true)
   const closePreview = () => setIsOpen(false)
 
@@ -67,41 +81,46 @@ export default function ImagePreview({
     onError?.()
   }
 
+  // Check if URL is invalid on mount
+  const urlIsInvalid = !isValidUrl(src)
+
   return (
     <>
       <div
-        className={`${styles.imageWrapper} ${hasError ? styles.imageError : ''}`}
-        onClick={openPreview}
+        className={`${styles.imageWrapper} ${hasError || urlIsInvalid ? styles.imageError : ''}`}
+        onClick={urlIsInvalid ? undefined : openPreview}
         role="button"
         tabIndex={0}
         aria-label={`Preview image: ${alt}`}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
+          if (!urlIsInvalid && (e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault()
             openPreview()
           }
         }}
       >
-        {isLoading && !hasError && (
+        {isLoading && !hasError && !urlIsInvalid && (
           <div className={styles.loadingOverlay}>
             <div className={styles.spinner}></div>
             <span>Loading image...</span>
           </div>
         )}
 
-        {hasError ? (
+        {hasError || urlIsInvalid ? (
           <div className={styles.errorContainer}>
             <AlertCircle size={48} className={styles.errorIcon} />
-            <p>Failed to load image</p>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                window.open(src, '_blank')
-              }}
-              className={styles.retryButton}
-            >
-              View Original
-            </button>
+            <p>{urlIsInvalid ? 'Invalid image URL' : 'Failed to load image'}</p>
+            {!urlIsInvalid && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  window.open(src, '_blank')
+                }}
+                className={styles.retryButton}
+              >
+                View Original
+              </button>
+            )}
           </div>
         ) : (
           <Image
@@ -121,7 +140,7 @@ export default function ImagePreview({
           />
         )}
 
-        {!hasError && (
+        {!hasError && !urlIsInvalid && (
           <div className={styles.overlay}>
             <ZoomIn size={32} />
             <span>Click or press Enter to view full size</span>

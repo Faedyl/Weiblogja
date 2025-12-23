@@ -48,7 +48,7 @@ export async function createUser(
         password: string,
         options?: Partial<CreateUserOptions>
 ): Promise<User> {
-        const hashedPassword = await bcrypt.hash(password, 12);
+        const hashedPassword = password ? await bcrypt.hash(password, 12) : "";
         const now = new Date().toISOString();
 
         const user: User = {

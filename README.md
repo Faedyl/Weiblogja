@@ -18,6 +18,7 @@ A modern blog platform with AI-powered journal-to-blog conversion. Transform you
 ### Prerequisites
 - Node.js 18+ installed
 - Google Gemini API key ([Get one here](https://ai.google.dev/))
+- (Optional) OpenRouter API key for fallback ([Get one here](https://openrouter.ai/))
 
 ### Installation
 
@@ -40,6 +41,7 @@ cp .env.example .env.local
 Edit `.env.local` and add:
 ```env
 GOOGLE_GEMINI_API_KEY=your_api_key_here
+OPENROUTER_API_KEY=your_openrouter_key_here # Optional: for fallback when Gemini fails
 # Add other required environment variables
 ```
 
@@ -81,7 +83,8 @@ See the [detailed guide](./docs/JOURNAL_TO_BLOG.md) for more information.
 
 - **Framework**: [Next.js 15](https://nextjs.org) with App Router
 - **Language**: TypeScript
-- **AI**: Google Gemini API
+- **AI**: Google Gemini API (primary), OpenRouter API (fallback)
+- **AI Models**: Gemini 2.0, Llama 3.2 (via OpenRouter)
 - **PDF Processing**: pdf-parse
 - **Styling**: CSS Modules
 - **Icons**: Lucide React
@@ -100,7 +103,8 @@ src/
 │   └── components/        # React components
 ├── services/              # Business logic services
 │   ├── pdf-extractor.ts   # PDF text extraction
-│   └── gemini-service.ts  # AI conversion service
+│   ├── gemini-service.ts  # AI conversion service (primary)
+│   └── openrouter-service.ts  # AI conversion service (fallback)
 ├── types/                 # TypeScript type definitions
 └── lib/                   # Utility functions
 ```
@@ -113,6 +117,7 @@ src/
 - Generates engaging titles and summaries
 - Creates relevant tags automatically
 - Maintains factual accuracy
+- **Automatic fallback**: Uses OpenRouter (Llama 3.2) if Gemini fails
 
 ### Enhanced Create Page
 - Modern drag-and-drop interface
@@ -131,6 +136,9 @@ src/
 GOOGLE_GEMINI_API_KEY=your_gemini_api_key
 NEXTAUTH_SECRET=your_nextauth_secret
 NEXTAUTH_URL=http://localhost:3000
+
+# Optional (for AI fallback)
+OPENROUTER_API_KEY=your_openrouter_api_key
 
 # AWS (if using)
 AWS_ACCESS_KEY_ID=your_access_key
@@ -166,6 +174,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 **PDF conversion fails:**
 - Ensure your Gemini API key is valid
+- If Gemini fails, add an OpenRouter API key for automatic fallback
 - Check if the PDF is password-protected (not supported)
 - Verify the PDF contains readable text
 

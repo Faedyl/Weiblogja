@@ -13,6 +13,7 @@ export interface ExtractedImage {
         mimeType: string;
         width?: number;
         height?: number;
+        isLogo?: boolean; // Flag to identify if image is a logo
 }
 
 export interface PDFMetadata {
@@ -47,6 +48,8 @@ export interface BlogConversionResult {
         sections: BlogSection[];
         imageUrls?: string[]; // S3 URLs of extracted images
         thumbnailUrl?: string; // Best image selected as thumbnail
+        logoUrl?: string; // Primary logo URL for metadata section (backward compatibility)
+        logoUrls?: string[]; // All logo URLs for metadata section
         pdfUrl?: string; // S3 URL of original PDF
         pdfHash?: string; // SHA-256 hash for duplicate detection
 }

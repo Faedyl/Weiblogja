@@ -65,6 +65,26 @@
 	gap: 1.5rem;
 	margin-bottom: 1rem;
 	color: #666;
+	align-items: center;
+}
+
+.logoContainer {
+	padding: 0.5rem;
+	background: #f9fafb;
+	border-radius: 8px;
+	display: flex;
+	gap: 0.5rem;
+	justify-content: center;
+	align-items: center;
+	border: 1px solid #e5e7eb;
+}
+
+.logo {
+	max-width: 120px;
+	max-height: 40px;
+	height: auto;
+	width: auto;
+	object-fit: contain;
 }
 
 .metaItem {

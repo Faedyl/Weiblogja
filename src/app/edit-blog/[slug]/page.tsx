@@ -1,10 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Save, ArrowLeft, X, Plus, Loader2 } from 'lucide-react';
 import { BlogPost } from '@/lib/dynamodb';
+import dynamic from 'next/dynamic';
 import styles from './edit-blog.module.css';
+
+const RichTextEditor = dynamic(() => import('./RichTextEditor'), {
+	ssr: false,
+	loading: () => (
+		<div className={styles.editorLoading}>
+			<Loader2 size={24} className={styles.spinner} />
+			<p>Loading editor...</p>
+		</div>
+	),
+});
 
 export default function EditBlogPage() {
 	const router = useRouter();
@@ -21,6 +32,9 @@ export default function EditBlogPage() {
 	const [tags, setTags] = useState<string[]>([]);
 	const [newTag, setNewTag] = useState('');
 	const [status, setStatus] = useState<'draft' | 'published'>('published');
+	const [editorMode, setEditorMode] = useState<'rich' | 'html'>('rich');
+	const [thumbnailUrl, setThumbnailUrl] = useState('');
+	const [logoUrl, setLogoUrl] = useState('');
 
 	useEffect(() => {
 		fetchBlog();
@@ -41,6 +55,8 @@ export default function EditBlogPage() {
 					setCategory(foundBlog.category || '');
 					setTags(foundBlog.tags || []);
 					setStatus(foundBlog.status);
+					setThumbnailUrl(foundBlog.thumbnail_url || '');
+					setLogoUrl(foundBlog.logo_url || '');
 				} else {
 					alert('Blog not found');
 					router.push('/my-blogs');
@@ -74,6 +90,8 @@ export default function EditBlogPage() {
 					summary,
 					tags,
 					status,
+					thumbnail_url: thumbnailUrl,
+					logo_url: logoUrl,
 				}),
 			});
 
@@ -178,6 +196,40 @@ export default function EditBlogPage() {
 				</div>
 
 				<div className={styles.formGroup}>
+					<label className={styles.formLabel}>Thumbnail Image URL</label>
+					<input
+						type="url"
+						value={thumbnailUrl}
+						onChange={(e) => setThumbnailUrl(e.target.value)}
+						className={styles.formInput}
+						placeholder="https://example.com/image.jpg"
+					/>
+					{thumbnailUrl && (
+						<div className={styles.imagePreview}>
+							<img src={thumbnailUrl} alt="Thumbnail preview" className={styles.thumbnailImage} />
+						</div>
+					)}
+					<p className={styles.hint}>This image will be shown on blog cards and previews</p>
+				</div>
+
+				<div className={styles.formGroup}>
+					<label className={styles.formLabel}>Logo/Icon URL (Optional)</label>
+					<input
+						type="url"
+						value={logoUrl}
+						onChange={(e) => setLogoUrl(e.target.value)}
+						className={styles.formInput}
+						placeholder="https://example.com/logo.png"
+					/>
+					{logoUrl && (
+						<div className={styles.imagePreview}>
+							<img src={logoUrl} alt="Logo preview" className={styles.logoImage} />
+						</div>
+					)}
+					<p className={styles.hint}>Small logo or icon for blog metadata</p>
+				</div>
+
+				<div className={styles.formGroup}>
 					<label className={styles.formLabel}>Category</label>
 					<input
 						type="text"
@@ -226,15 +278,40 @@ export default function EditBlogPage() {
 				</div>
 
 				<div className={styles.formGroup}>
-					<label className={styles.formLabel}>Content</label>
-					<textarea
-						value={content}
-						onChange={(e) => setContent(e.target.value)}
-						className={`${styles.formTextarea} ${styles.contentEditor}`}
-						rows={20}
-						placeholder="Enter blog content (HTML supported)"
-					/>
-					<p className={styles.hint}>You can use HTML for formatting</p>
+					<div className={styles.contentHeader}>
+						<label className={styles.formLabel}>Content</label>
+						<div className={styles.editorToggle}>
+							<button
+								type="button"
+								onClick={() => setEditorMode('rich')}
+								className={editorMode === 'rich' ? styles.toggleActive : styles.toggleButton}
+							>
+								Rich Text
+							</button>
+							<button
+								type="button"
+								onClick={() => setEditorMode('html')}
+								className={editorMode === 'html' ? styles.toggleActive : styles.toggleButton}
+							>
+								HTML
+							</button>
+						</div>
+					</div>
+					
+					{editorMode === 'rich' ? (
+						<RichTextEditor content={content} onChange={setContent} />
+					) : (
+						<>
+							<textarea
+								value={content}
+								onChange={(e) => setContent(e.target.value)}
+								className={`${styles.formTextarea} ${styles.contentEditor}`}
+								rows={20}
+								placeholder="Enter blog content (HTML)"
+							/>
+							<p className={styles.hint}>Direct HTML editing mode</p>
+						</>
+					)}
 				</div>
 
 				<div className={styles.formActions}>

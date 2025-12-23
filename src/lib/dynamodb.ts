@@ -38,6 +38,8 @@ export interface BlogPost {
 	slug: string
 	// New image fields
 	thumbnail_url?: string
+	logo_url?: string // Primary logo URL for metadata section (backward compatibility)
+	logo_urls?: string[] // All logo URLs for metadata section
 	images?: Array<{
 		url: string
 		alt: string
