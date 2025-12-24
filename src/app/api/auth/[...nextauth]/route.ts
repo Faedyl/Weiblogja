@@ -1,7 +1,7 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
-import { getUserByEmail, createUser, verifyPassword } from "@/lib/db/users"
+import { getUserByEmail, createUser, verifyPassword, updateUser } from "@/lib/db/users"
 import { logger } from "@/lib/logger"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -49,10 +49,44 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                                         // Check if user already exists
                                         const existingUser = await getUserByEmail(credentials.email as string)
                                         if (existingUser) {
-                                                throw new Error("User already exists with this email")
+                                                // Allow registration if user exists with pending verification status
+                                                // This handles cases where user is completing registration after initial form submission
+                                                if (existingUser.verificationStatus === 'pending') {
+                                                        // Update the pending user's information
+                                                        // We need to hash the password separately since updateUser doesn't handle hashing
+                                                        const bcrypt = await import('bcryptjs');
+                                                        const hashedPassword = await bcrypt.hash(credentials.password as string, 12);
+
+                                                        const updatedUser = await updateUser(credentials.email as string, {
+                                                                name: credentials.name as string,
+                                                                password: hashedPassword,
+                                                                institution: credentials.institution as string,
+                                                                department: credentials.department as string,
+                                                                orcid: credentials.orcid as string,
+                                                                verificationStatus: 'pending',
+                                                                updatedAt: new Date().toISOString()
+                                                        });
+
+                                                        // Fetch the updated user to return complete information
+                                                        const finalUser = await getUserByEmail(credentials.email as string);
+                                                        if (!finalUser) {
+                                                                throw new Error("Failed to update user");
+                                                        }
+
+                                                        return {
+                                                                id: finalUser.email,
+                                                                email: finalUser.email,
+                                                                name: finalUser.name,
+                                                                role: finalUser.role || 'visitor',
+                                                                institution: finalUser.institution,
+                                                                verificationStatus: finalUser.verificationStatus
+                                                        };
+                                                } else {
+                                                        throw new Error("User already exists with this email")
+                                                }
                                         }
 
-                                        // Create new user with enhanced profile
+                                        // Create new user with pending verification status
                                         const newUser = await createUser(
                                                 credentials.email as string,
                                                 credentials.name as string,
@@ -61,11 +95,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                                                         institution: credentials.institution as string,
                                                         department: credentials.department as string,
                                                         orcid: credentials.orcid as string,
+                                                        verificationStatus: 'pending'  // Set verification status to pending
                                                 }
                                         )
 
-                                        logger.debug('📝 New user registered:', { 
-                                                email: newUser.email, 
+                                        logger.debug('📝 New user registered:', {
+                                                email: newUser.email,
                                                 role: newUser.role,
                                                 institution: newUser.institution,
                                                 verificationStatus: newUser.verificationStatus
@@ -85,6 +120,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
                                         if (!user) {
                                                 throw new Error("No user found with this email")
+                                        }
+
+                                        // Check if user has verified their email
+                                        if (user.verificationStatus !== 'verified') {
+                                                throw new Error("Please verify your email address before logging in")
                                         }
 
                                         const isValid = await verifyPassword(credentials.password as string, user.password)

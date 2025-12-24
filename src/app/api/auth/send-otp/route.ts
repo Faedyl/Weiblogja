@@ -23,11 +23,19 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		// Check if user already exists
+		// Check if user exists with pending verification status
 		const existingUser = await getUserByEmail(email);
-		if (existingUser) {
+		if (!existingUser) {
 			return NextResponse.json(
-				{ error: "User already exists with this email" },
+				{ error: "User not found. Please register first." },
+				{ status: 404 }
+			);
+		}
+
+		// Only allow sending OTP if user is pending verification
+		if (existingUser.verificationStatus !== "pending") {
+			return NextResponse.json(
+				{ error: "User is already verified or has completed registration" },
 				{ status: 409 }
 			);
 		}

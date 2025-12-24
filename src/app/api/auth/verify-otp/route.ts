@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyOTP } from "@/lib/db/otp";
+import { verifyUserEmail } from "@/lib/db/users";
 
 export async function POST(request: NextRequest) {
 	try {
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest) {
 				{ status: 400 }
 			);
 		}
+
+		// Update user's verification status upon successful OTP verification
+		await verifyUserEmail(email);
 
 		return NextResponse.json({
 			success: true,

@@ -40,6 +40,7 @@ export interface CreateUserOptions {
         department?: string;
         orcid?: string;
         alternativeNames?: string[];
+        verificationStatus?: 'unverified' | 'pending' | 'verified';
 }
 
 export async function createUser(
@@ -58,7 +59,7 @@ export async function createUser(
                 createdAt: now,
                 updatedAt: now,
                 role: "visitor",
-                verificationStatus: "unverified",
+                verificationStatus: options?.verificationStatus || "unverified",
                 institution: options?.institution,
                 department: options?.department,
                 orcid: options?.orcid,
@@ -127,32 +128,58 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 }
 
 export async function updateUser(email: string, updates: Partial<User>): Promise<User | null> {
+	const now = new Date().toISOString();
+
+	// Get existing user to preserve fields not being updated
+	const existingUser = await getUserByEmail(email);
+	if (!existingUser) {
+		console.error("User not found for update:", email);
+		return null;
+	}
+
+	const command = new PutCommand({
+		TableName: TABLE_NAME,
+		Item: {
+			PK: `USER#${email}`,
+			SK: `PROFILE#${email}`,
+			GSI1PK: "USER",
+			GSI1SK: existingUser.createdAt,
+			...existingUser,
+			...updates,
+			email,
+			updatedAt: now,
+		},
+	});
+
+	try {
+		await docClient.send(command);
+		return await getUserByEmail(email);
+	} catch (error) {
+		console.error("Error updating user:", error);
+		return null;
+	}
+}
+
+export async function verifyUserEmail(email: string): Promise<boolean> {
         const now = new Date().toISOString();
-
-        const command = new PutCommand({
-                TableName: TABLE_NAME,
-                Item: {
-                        PK: `USER#${email}`,
-                        SK: `PROFILE#${email}`,
-                        GSI1PK: "USER",
-                        GSI1SK: updates.createdAt || now,
-                        ...updates,
-                        email,
-                        updatedAt: now,
-                },
-        });
-
         try {
-                await docClient.send(command);
-                return await getUserByEmail(email);
+                await updateUser(email, {
+                        verificationStatus: 'verified',
+                        verifiedAt: now,
+                        updatedAt: now,
+                });
+                return true;
         } catch (error) {
-                console.error("Error updating user:", error);
-                return null;
+                console.error("Error verifying user email:", error);
+                return false;
         }
 }
 
 export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-        return bcrypt.compare(password, hashedPassword);
+	if (!hashedPassword) {
+		return false;
+	}
+	return bcrypt.compare(password, hashedPassword);
 }
 
 export async function getAllUsers(): Promise<User[]> {
