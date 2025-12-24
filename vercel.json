@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "includeFiles": "node_modules/@napi-rs/canvas-linux-x64-gnu/**"
+    }
+  }
+}
