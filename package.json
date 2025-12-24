@@ -14,6 +14,8 @@
     "@aws-sdk/lib-dynamodb": "^3.908.0",
     "@aws-sdk/s3-request-presigner": "^3.908.0",
     "@google/generative-ai": "^0.24.1",
+    "@napi-rs/canvas": "^0.1.86",
+    "@napi-rs/canvas-linux-x64-gnu": "^0.1.86",
     "@tiptap/extension-image": "^3.14.0",
     "@tiptap/extension-link": "^3.14.0",
     "@tiptap/extension-placeholder": "^3.14.0",
