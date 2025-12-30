@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from '@/contexts/AuthContext';
 import { Mail, EyeClosed, Eye } from 'lucide-react'
 import styles from "./AuthForm.module.css";
@@ -11,11 +11,21 @@ interface AuthFormProps {
 	mode?: "login" | "register";
 }
 
+// Map NextAuth error codes to user-friendly messages
+const errorMessages: Record<string, string> = {
+	Configuration: "There is a problem with the server configuration. Please contact support if this persists.",
+	AccessDenied: "Access denied. Please check your credentials.",
+	Verification: "The verification token has expired or has already been used.",
+	CredentialsSignin: "Invalid email or password. Please check your credentials and try again.",
+	Default: "Invalid email or password. Please check your credentials and try again.",
+};
+
 export default function AuthForm({ mode = "login" }: AuthFormProps) {
 	const [isLogin, setIsLogin] = useState(mode === "login");
 	const [showPassword, setShowPassword] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState("");
+	const searchParams = useSearchParams();
 	const [formData, setFormData] = useState({
 		email: "",
 		password: "",
@@ -29,6 +39,19 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
 	const [otpEmail, setOtpEmail] = useState("");
 
 	const router = useRouter();
+
+	// Check for error parameters in URL (fallback for any redirects)
+	useEffect(() => {
+		const errorParam = searchParams?.get('error');
+		if (errorParam) {
+			const errorMessage = errorMessages[errorParam] || errorMessages.Default;
+			setError(errorMessage);
+			// Clean up the URL by removing the error parameter
+			const newUrl = new URL(window.location.href);
+			newUrl.searchParams.delete('error');
+			window.history.replaceState({}, '', newUrl.toString());
+		}
+	}, [searchParams]);
 
 	const sendOTP = async (email: string, name: string) => {
 		try {
@@ -108,7 +131,9 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
 				});
 
 				if (result?.error) {
-					setError(result.error);
+					// Map NextAuth error codes to user-friendly messages
+					const errorMsg = errorMessages[result.error] || result.error;
+					setError(errorMsg);
 				} else if (result?.ok) {
 					// User created successfully, now send OTP
 					try {
@@ -135,7 +160,9 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
 				});
 
 				if (result?.error) {
-					setError(result.error);
+					// Map NextAuth error codes to user-friendly messages
+					const errorMsg = errorMessages[result.error] || result.error;
+					setError(errorMsg);
 				} else if (result?.ok) {
 					router.push("/profile");
 					router.refresh();
@@ -170,7 +197,9 @@ export default function AuthForm({ mode = "login" }: AuthFormProps) {
 				});
 
 				if (loginResult?.error) {
-					setError(loginResult.error);
+					// Map NextAuth error codes to user-friendly messages
+					const errorMsg = errorMessages[loginResult.error] || loginResult.error;
+					setError(errorMsg);
 				} else if (loginResult?.ok) {
 					router.push("/profile");
 					router.refresh();

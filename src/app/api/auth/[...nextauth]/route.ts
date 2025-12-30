@@ -116,30 +116,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                                         }
                                 } else {
                                         // Login flow
-                                        const user = await getUserByEmail(credentials.email as string)
+                                        try {
+                                                const user = await getUserByEmail(credentials.email as string)
 
-                                        if (!user) {
-                                                throw new Error("No user found with this email")
-                                        }
+                                                if (!user) {
+                                                        // Return null for invalid credentials
+                                                        // This will result in CredentialsSignin error
+                                                        return null
+                                                }
 
-                                        // Check if user has verified their email
-                                        if (user.verificationStatus !== 'verified') {
-                                                throw new Error("Please verify your email address before logging in")
-                                        }
+                                                // Check if user has verified their email
+                                                if (user.verificationStatus !== 'verified') {
+                                                        // Return null for unverified users
+                                                        // This will result in CredentialsSignin error
+                                                        return null
+                                                }
 
-                                        const isValid = await verifyPassword(credentials.password as string, user.password)
+                                                const isValid = await verifyPassword(credentials.password as string, user.password)
 
-                                        if (!isValid) {
-                                                throw new Error("Invalid password")
-                                        }
+                                                if (!isValid) {
+                                                        // Return null for invalid password
+                                                        // This will result in CredentialsSignin error
+                                                        return null
+                                                }
 
-                                        logger.debug('🔐 User logged in:', { email: user.email, role: user.role })
+                                                logger.debug('🔐 User logged in:', { email: user.email, role: user.role })
 
-                                        return {
-                                                id: user.email,
-                                                email: user.email,
-                                                name: user.name,
-                                                role: user.role || 'visitor' // Add role here
+                                                return {
+                                                        id: user.email,
+                                                        email: user.email,
+                                                        name: user.name,
+                                                        role: user.role || 'visitor' // Add role here
+                                                }
+                                        } catch (error) {
+                                                logger.error('Error in authorize function:', error)
+                                                // Return null for any unexpected errors
+                                                // This will result in CredentialsSignin error
+                                                return null
                                         }
                                 }
                         },
@@ -150,7 +163,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         },
         pages: {
                 signIn: "/profile",
-                error: "/profile",
         },
         callbacks: {
                 async signIn({ user, account, profile }) {
