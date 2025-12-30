@@ -1,7 +1,8 @@
 {
   "functions": {
-    "src/app/api/**/*.ts": {
-      "includeFiles": "node_modules/@napi-rs/canvas-linux-x64-gnu/**"
+    "src/app/api/pdf/upload/route.ts": {
+      "includeFiles": "node_modules/{canvas/**,@napi-rs/canvas*/**}"
     }
-  }
+  },
+  "buildCommand": "npm run build"
 }

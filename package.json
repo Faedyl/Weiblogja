@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "npm rebuild canvas"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.908.0",

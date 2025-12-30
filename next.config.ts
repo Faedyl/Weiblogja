@@ -1,11 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-        serverExternalPackages: ['@napi-rs/canvas', 'pdfjs-dist'],
-        experimental: {
-
-                serverComponentsExternalPackages: ['@napi-rs/canvas', 'pdfjs-dist'],
-        },
+        serverExternalPackages: ['@napi-rs/canvas', 'pdfjs-dist', 'canvas'],
 
         images: {
                 remotePatterns: [
@@ -22,6 +18,18 @@ const nextConfig: NextConfig = {
                                 pathname: '/**',
                         }
                 ],
+        },
+
+        webpack: (config, { isServer }) => {
+                if (isServer) {
+                        config.externals = [
+                                ...(config.externals || []),
+                                'canvas',
+                                '@napi-rs/canvas',
+                                'pdfjs-dist'
+                        ];
+                }
+                return config;
         },
 }
 

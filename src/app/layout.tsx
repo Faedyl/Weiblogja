@@ -17,6 +17,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
         title: "Weiblogja",
         description: "Web blog with Implementation Generative AI",
+        icons: {
+                icon: "/weiblogja.svg",
+                shortcut: "/weiblogja.svg",
+                apple: "/weiblogja.svg",
+        },
 };
 
 export default function RootLayout({
