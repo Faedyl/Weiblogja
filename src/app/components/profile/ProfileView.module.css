@@ -208,7 +208,7 @@
 }
 
 .saveButton {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: #154D71;
 	color: white;
 	padding: 0.5rem 1rem;
 	border-radius: 0.5rem;
@@ -220,11 +220,18 @@
 	align-items: center;
 	justify-content: center;
 	gap: 0.5rem;
+	box-shadow: 0 4px 12px rgba(21, 77, 113, 0.2);
 }
 
-.saveButton:hover {
+.saveButton:hover:not(:disabled) {
+	background: #0f3a54;
 	transform: translateY(-1px);
-	box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+	box-shadow: 0 6px 16px rgba(21, 77, 113, 0.3);
+}
+
+.saveButton:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
 }
 
 .cancelButton {
@@ -242,8 +249,41 @@
 	gap: 0.5rem;
 }
 
-.cancelButton:hover {
+.cancelButton:hover:not(:disabled) {
 	background: #e5e7eb;
+}
+
+.cancelButton:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.saveMessageSuccess {
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+	padding: 0.875rem 1.25rem;
+	background: #d1fae5;
+	color: #065f46;
+	border-radius: 0.5rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	text-align: center;
+	border: 1px solid #a7f3d0;
+	box-shadow: 0 2px 4px rgba(5, 95, 70, 0.1);
+}
+
+.saveMessageError {
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+	padding: 0.875rem 1.25rem;
+	background: #fee2e2;
+	color: #991b1b;
+	border-radius: 0.5rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	text-align: center;
+	border: 1px solid #fecaca;
+	box-shadow: 0 2px 4px rgba(153, 27, 27, 0.1);
 }
 
 .statsGrid {
@@ -321,23 +361,29 @@
 }
 
 .roleMessageSuccess {
-	margin-top: 0.5rem;
-	padding: 0.5rem;
+	margin-top: 0.75rem;
+	padding: 0.875rem 1.25rem;
 	background: #d1fae5;
 	color: #065f46;
-	border-radius: 0.375rem;
-	font-size: 0.75rem;
+	border-radius: 0.5rem;
+	font-size: 0.875rem;
 	font-weight: 500;
+	text-align: center;
+	border: 1px solid #a7f3d0;
+	box-shadow: 0 2px 4px rgba(5, 95, 70, 0.1);
 }
 
 .roleMessageError {
-	margin-top: 0.5rem;
-	padding: 0.5rem;
+	margin-top: 0.75rem;
+	padding: 0.875rem 1.25rem;
 	background: #fee2e2;
 	color: #991b1b;
-	border-radius: 0.375rem;
-	font-size: 0.75rem;
+	border-radius: 0.5rem;
+	font-size: 0.875rem;
 	font-weight: 500;
+	text-align: center;
+	border: 1px solid #fecaca;
+	box-shadow: 0 2px 4px rgba(153, 27, 27, 0.1);
 }
 
 .quickActions {

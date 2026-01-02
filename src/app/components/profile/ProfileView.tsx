@@ -24,6 +24,9 @@ export default function ProfileView({ user }: ProfileViewProps) {
 		name: user.name,
 		bio: user.bio || "",
 	});
+	const [currentUser, setCurrentUser] = useState(user);
+	const [isSaving, setIsSaving] = useState(false);
+	const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 	const [selectedRole, setSelectedRole] = useState<'visitor' | 'author'>(
 		(user.role === 'admin' ? 'author' : user.role) || 'visitor'
 	);
@@ -34,8 +37,58 @@ export default function ProfileView({ user }: ProfileViewProps) {
 	const [activityType, setActivityType] = useState<'created' | 'viewed'>('created');
 
 	const handleSave = async () => {
-		// TODO: Implement profile update API
-		setIsEditing(false);
+		if (!formData.name.trim()) {
+			setSaveMessage({ 
+				type: 'error', 
+				text: 'Name is required' 
+			});
+			return;
+		}
+
+		setIsSaving(true);
+		setSaveMessage(null);
+
+		try {
+			const response = await fetch('/api/user/update-profile', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					name: formData.name.trim(),
+					bio: formData.bio.trim(),
+				}),
+			});
+
+			const data = await response.json();
+
+			if (response.ok) {
+				setCurrentUser({
+					...currentUser,
+					name: data.user.name,
+					bio: data.user.bio,
+				});
+				setSaveMessage({ 
+					type: 'success', 
+					text: data.message || 'Profile updated successfully!' 
+				});
+				setIsEditing(false);
+				// Clear message after 3 seconds
+				setTimeout(() => setSaveMessage(null), 3000);
+			} else {
+				setSaveMessage({ 
+					type: 'error', 
+					text: data.error || 'Failed to update profile' 
+				});
+			}
+		} catch (error) {
+			setSaveMessage({ 
+				type: 'error', 
+				text: 'An error occurred while updating profile' 
+			});
+		} finally {
+			setIsSaving(false);
+		}
 	};
 
 	const handleRoleChange = async (newRole: 'visitor' | 'author') => {
@@ -143,17 +196,17 @@ export default function ProfileView({ user }: ProfileViewProps) {
 				<div className={styles.content}>
 					{/* Avatar */}
 					<div className={styles.avatarSection}>
-						<div className={styles.avatarContainer}>
+							<div className={styles.avatarContainer}>
 							<div className={styles.avatar}>
-								{user.avatar ? (
+								{currentUser.avatar ? (
 									<img
-										src={user.avatar}
-										alt={user.name}
+										src={currentUser.avatar}
+										alt={currentUser.name}
 										className={styles.avatarImage}
 									/>
 								) : (
 									<div className={styles.avatarPlaceholder}>
-										{user.name.charAt(0).toUpperCase()}
+										{currentUser.name.charAt(0).toUpperCase()}
 									</div>
 								)}
 							</div>
@@ -185,21 +238,40 @@ export default function ProfileView({ user }: ProfileViewProps) {
 									<button
 										onClick={handleSave}
 										className={styles.saveButton}
+										disabled={isSaving}
 									>
-										<Save size={18} /> Save Changes
+										<Save size={18} /> {isSaving ? 'Saving...' : 'Save Changes'}
 									</button>
 									<button
-										onClick={() => setIsEditing(false)}
+										onClick={() => {
+											setIsEditing(false);
+											setFormData({
+												name: currentUser.name,
+												bio: currentUser.bio || "",
+											});
+											setSaveMessage(null);
+										}}
 										className={styles.cancelButton}
+										disabled={isSaving}
 									>
 										<X size={18} /> Cancel
 									</button>
 								</div>
+								{saveMessage && (
+									<p className={styles[`saveMessage${saveMessage.type === 'success' ? 'Success' : 'Error'}`]}>
+										{saveMessage.text}
+									</p>
+								)}
 							</div>
 						) : (
 							<div className={styles.displayInfo}>
-								<h1 className={styles.userName}>{user.name}</h1>
-								<p className={styles.userBio}>{user.bio || "No bio added yet"}</p>
+								<h1 className={styles.userName}>{currentUser.name}</h1>
+								<p className={styles.userBio}>{currentUser.bio || "No bio added yet"}</p>
+								{saveMessage && (
+									<p className={styles[`saveMessage${saveMessage.type === 'success' ? 'Success' : 'Error'}`]}>
+										{saveMessage.text}
+									</p>
+								)}
 								<button
 									onClick={() => setIsEditing(true)}
 									className={styles.editButton}
@@ -215,13 +287,13 @@ export default function ProfileView({ user }: ProfileViewProps) {
 						<div className={styles.statCard}>
 							<div className={styles.statIcon}><Mail size={32} /></div>
 							<h3 className={styles.statTitle}>Email</h3>
-							<p className={styles.statValue}>{user.email}</p>
+							<p className={styles.statValue}>{currentUser.email}</p>
 						</div>
 
 						<div className={styles.statCard}>
 							<div className={styles.statIcon}><Calendar size={32} /></div>
 							<h3 className={styles.statTitle}>Member Since</h3>
-							<p className={styles.statValue}>{formatDate(user.createdAt)}</p>
+							<p className={styles.statValue}>{formatDate(currentUser.createdAt)}</p>
 						</div>
 
 						<div className={styles.statCard}>
