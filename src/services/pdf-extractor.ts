@@ -86,7 +86,23 @@ export class PDFExtractor {
                 try {
                         // Import required modules dynamically
                         const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-                        const { createCanvas } = await import('canvas');
+                        let createCanvas: any;
+                        
+                        // Try @napi-rs/canvas first (works in serverless environments like Vercel)
+                        try {
+                                const canvasModule = await import('@napi-rs/canvas');
+                                createCanvas = canvasModule.createCanvas;
+                        } catch (napiError) {
+                                // Fallback to regular canvas if @napi-rs/canvas fails
+                                logger.warn('Failed to load @napi-rs/canvas, trying canvas package:', napiError);
+                                try {
+                                        const canvasModule = await import('canvas');
+                                        createCanvas = canvasModule.createCanvas;
+                                } catch (canvasError) {
+                                        logger.error('Failed to load both canvas packages:', canvasError);
+                                        throw new Error('Canvas library not available. Image extraction requires a canvas library.');
+                                }
+                        }
 
                         // Set worker source for server-side rendering
                         // Using the legacy worker from node_modules
@@ -158,9 +174,22 @@ export class PDFExtractor {
                                                                                         continue;
                                                                                 }
 
+                                                                                // Check if createCanvas is available
+                                                                                if (!createCanvas) {
+                                                                                        logger.warn('Canvas library not available, skipping image extraction');
+                                                                                        continue;
+                                                                                }
+
                                                                                 // Create canvas with image dimensions
-                                                                                const canvas = createCanvas(imgObj.width, imgObj.height);
-                                                                                const ctx = canvas.getContext('2d');
+                                                                                let canvas: any;
+                                                                                let ctx: any;
+                                                                                try {
+                                                                                        canvas = createCanvas(imgObj.width, imgObj.height);
+                                                                                        ctx = canvas.getContext('2d');
+                                                                                } catch (canvasError) {
+                                                                                        logger.error(`Failed to create canvas for image ${imgName}:`, canvasError);
+                                                                                        continue;
+                                                                                }
 
                                                                                 // Create ImageData
                                                                                 const imageData = ctx.createImageData(imgObj.width, imgObj.height);
@@ -190,31 +219,37 @@ export class PDFExtractor {
                                                                                         }
                                                                                 }
 
-                                                                                ctx.putImageData(imageData, 0, 0);
+                                                                                try {
+                                                                                        ctx.putImageData(imageData, 0, 0);
 
-                                                                                // Calculate image sharpness/bluriness
-                                                                                const isBlurry = this.isImageBlurry(ctx, imgObj.width, imgObj.height);
-                                                                                
-                                                                                if (isBlurry) {
-                                                                                        logger.debug(`Skipping image ${imgName} from page ${pageNum}: Too blurry`);
+                                                                                        // Calculate image sharpness/bluriness
+                                                                                        const isBlurry = this.isImageBlurry(ctx, imgObj.width, imgObj.height);
+                                                                                        
+                                                                                        if (isBlurry) {
+                                                                                                logger.debug(`Skipping image ${imgName} from page ${pageNum}: Too blurry`);
+                                                                                                continue;
+                                                                                        }
+
+                                                                                        // Convert to base64
+                                                                                        const dataUrl = canvas.toDataURL('image/png');
+                                                                                        const base64Data = dataUrl.split(',')[1];
+
+                                                                                        images.push({
+                                                                                                data: base64Data,
+                                                                                                alt: `Image ${images.length + 1} from page ${pageNum}`,
+                                                                                                page: pageNum,
+                                                                                                position: images.length,
+                                                                                                mimeType: 'image/png',
+                                                                                                width: imgObj.width,
+                                                                                                height: imgObj.height,
+                                                                                        });
+
+                                                                                        logger.debug(`✓ Extracted image ${images.length} from page ${pageNum} (${imgObj.width}x${imgObj.height})`);
+                                                                                } catch (canvasOpError) {
+                                                                                        logger.error(`Failed to process image ${imgName} with canvas:`, canvasOpError);
+                                                                                        // Continue to next image instead of failing completely
                                                                                         continue;
                                                                                 }
-
-                                                                                // Convert to base64
-                                                                                const dataUrl = canvas.toDataURL('image/png');
-                                                                                const base64Data = dataUrl.split(',')[1];
-
-                                                                                images.push({
-                                                                                        data: base64Data,
-                                                                                        alt: `Image ${images.length + 1} from page ${pageNum}`,
-                                                                                        page: pageNum,
-                                                                                        position: images.length,
-                                                                                        mimeType: 'image/png',
-                                                                                        width: imgObj.width,
-                                                                                        height: imgObj.height,
-                                                                                });
-
-                                                                                logger.debug(`✓ Extracted image ${images.length} from page ${pageNum} (${imgObj.width}x${imgObj.height})`);
                                                                         }
                                                                 } catch (imgError) {
                                                                         logger.warn(`Could not extract image "${imgName}" from page ${pageNum}:`, imgError);
