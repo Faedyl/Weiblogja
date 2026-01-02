@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Edit, Trash2, Eye, Loader2, PlusCircle, BookOpen, Calendar, Bot } from 'lucide-react';
 import { BlogPost } from '@/lib/dynamodb';
+import ConfirmDialog from '@/app/components/ConfirmDialog/ConfirmDialog';
+import Notification, { NotificationType } from '@/app/components/Notification/Notification';
 import styles from './my-blogs.module.css';
 
 export default function MyBlogsPage() {
@@ -13,6 +15,19 @@ export default function MyBlogsPage() {
 	const [blogs, setBlogs] = useState<BlogPost[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
+	const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; slug: string | null }>({
+		isOpen: false,
+		slug: null,
+	});
+	const [notification, setNotification] = useState<{ isOpen: boolean; message: string; type: NotificationType }>({
+		isOpen: false,
+		message: '',
+		type: 'info',
+	});
+
+	const showNotification = (message: string, type: NotificationType = 'info') => {
+		setNotification({ isOpen: true, message, type });
+	};
 
 	useEffect(() => {
 		if (status === 'unauthenticated') {
@@ -40,12 +55,17 @@ export default function MyBlogsPage() {
 		}
 	};
 
-	const handleDelete = async (slug: string) => {
-		if (!confirm('Are you sure you want to delete this blog? This action cannot be undone.')) {
-			return;
-		}
+	const handleDeleteClick = (slug: string) => {
+		setDeleteDialog({ isOpen: true, slug });
+	};
 
+	const handleDeleteConfirm = async () => {
+		if (!deleteDialog.slug) return;
+
+		const slug = deleteDialog.slug;
+		setDeleteDialog({ isOpen: false, slug: null });
 		setDeletingId(slug);
+
 		try {
 			const response = await fetch(`/api/blogs/${slug}`, {
 				method: 'DELETE',
@@ -53,16 +73,20 @@ export default function MyBlogsPage() {
 
 			if (response.ok) {
 				setBlogs(blogs.filter(blog => blog.slug !== slug));
-				alert('✅ Blog deleted successfully!');
+				showNotification('Blog deleted successfully!', 'success');
 			} else {
 				throw new Error('Failed to delete blog');
 			}
 		} catch (error) {
 			console.error('Error deleting blog:', error);
-			alert('❌ Failed to delete blog. Please try again.');
+			showNotification('Failed to delete blog. Please try again.', 'error');
 		} finally {
 			setDeletingId(null);
 		}
+	};
+
+	const handleDeleteCancel = () => {
+		setDeleteDialog({ isOpen: false, slug: null });
 	};
 
 	const handleEdit = (slug: string) => {
@@ -120,7 +144,7 @@ export default function MyBlogsPage() {
 						onClick={() => router.push('/create')}
 						className={styles.createButtonLarge}
 					>
-						<PlusCircle size={20} />
+						<PlusCircle size={28} />
 						Create Your First Blog
 					</button>
 				</div>
@@ -162,19 +186,22 @@ export default function MyBlogsPage() {
 												<span className={styles.draftBadge}>Draft</span>
 											)}
 											{blog.ai_generated && (
-												<span className={styles.aiBadge}><Bot size={14} />
-									AI</span>
+												<span className={styles.aiBadge}>
+													<Bot size={14} />
+													<span>AI</span>
+												</span>
 											)}
 										</div>
 									</div>
 
 									<div className={styles.blogMeta}>
 										<span className={styles.metaItem}>
-<Calendar size={16} />
+											<Calendar size={16} />
 											{formatDate(blog.created_at)}
 										</span>
 										<span className={styles.metaItem}>
-											View{blog.views || 0} views
+											<Eye size={16} />
+											{blog.views || 0} views
 										</span>
 										{blog.category && (
 											<span className={styles.categoryBadge}>
@@ -217,7 +244,7 @@ export default function MyBlogsPage() {
 										Edit
 									</button>
 									<button
-										onClick={() => handleDelete(blog.slug)}
+										onClick={() => handleDeleteClick(blog.slug)}
 										disabled={deletingId === blog.slug}
 										className={`${styles.actionButton} ${styles.deleteButton}`}
 										title="Delete blog"
@@ -235,6 +262,24 @@ export default function MyBlogsPage() {
 					</div>
 				</div>
 			)}
+
+			<ConfirmDialog
+				isOpen={deleteDialog.isOpen}
+				title="Delete Blog"
+				message="Are you sure you want to delete this blog? This action cannot be undone."
+				confirmText="Delete"
+				cancelText="Cancel"
+				onConfirm={handleDeleteConfirm}
+				onCancel={handleDeleteCancel}
+				variant="danger"
+			/>
+
+			<Notification
+				isOpen={notification.isOpen}
+				message={notification.message}
+				type={notification.type}
+				onClose={() => setNotification({ ...notification, isOpen: false })}
+			/>
 		</div>
 	);
 }
