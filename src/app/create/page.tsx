@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { ConversionStatus, BlogConversionResult } from '@/types/pdf';
 import { FileText, Upload, CheckCircle, AlertCircle, Loader, Sparkles, Edit, Save, Eye, X, Plus } from 'lucide-react';
 import ImagePreview from '@/app/components/ImagePreview/ImagePreview';
+import Notification, { NotificationType } from '@/app/components/Notification/Notification';
 import styles from './create.module.css';
 
 export default function CreatePage() {
@@ -19,7 +20,27 @@ export default function CreatePage() {
 	const [editedTags, setEditedTags] = useState<string[]>([]);
 	const [newTag, setNewTag] = useState('');
 	const [isPublishing, setIsPublishing] = useState(false);
+	const [notification, setNotification] = useState<{ isOpen: boolean; message: string; type: NotificationType }>({
+		isOpen: false,
+		message: '',
+		type: 'info',
+	});
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+	const currentProgressRef = useRef<number>(25);
+
+	const showNotification = (message: string, type: NotificationType = 'info') => {
+		setNotification({ isOpen: true, message, type });
+	};
+
+	// Cleanup interval on unmount
+	useEffect(() => {
+		return () => {
+			if (progressIntervalRef.current) {
+				clearInterval(progressIntervalRef.current);
+			}
+		};
+	}, []);
 
 	const validateFile = (file: File): string | null => {
 		if (file.type !== 'application/pdf') {
@@ -36,7 +57,7 @@ export default function CreatePage() {
 		if (selectedFile) {
 			const error = validateFile(selectedFile);
 			if (error) {
-				alert(error);
+				showNotification(error, 'error');
 				return;
 			}
 			setFile(selectedFile);
@@ -66,7 +87,7 @@ export default function CreatePage() {
 		if (droppedFile) {
 			const error = validateFile(droppedFile);
 			if (error) {
-				alert(error);
+				showNotification(error, 'error');
 				return;
 			}
 			setFile(droppedFile);
@@ -77,6 +98,12 @@ export default function CreatePage() {
 
 	const handleUpload = async () => {
 		if (!file) return;
+
+		// Clear any existing progress interval
+		if (progressIntervalRef.current) {
+			clearInterval(progressIntervalRef.current);
+			progressIntervalRef.current = null;
+		}
 
 		setIsProcessing(true);
 		setStatus({
@@ -90,17 +117,47 @@ export default function CreatePage() {
 			const formData = new FormData();
 			formData.append('file', file);
 
+			// Update status right before fetch - extraction happens on backend
+			currentProgressRef.current = 25;
 			setStatus({
 				id: '',
 				status: 'extracting',
-				progress: 40,
-				message: 'Extracting text and images from PDF...',
+				progress: currentProgressRef.current,
+				message: 'Processing PDF (this may take a minute)...',
 			});
+
+			// Simulate progress from 25% to 85% while waiting for response
+			// Progress increases gradually, with slower increments as it approaches the limit
+			const targetProgress = 85;
+			progressIntervalRef.current = setInterval(() => {
+				currentProgressRef.current += Math.random() * 3 + 1; // Increment by 1-4%
+				
+				// Never exceed 85% until response comes
+				if (currentProgressRef.current >= targetProgress) {
+					currentProgressRef.current = targetProgress;
+					setStatus(prev => prev ? {
+						...prev,
+						progress: targetProgress,
+					} : null);
+					// Keep interval running but progress stays at 85%
+				} else {
+					setStatus(prev => prev ? {
+						...prev,
+						progress: Math.floor(currentProgressRef.current),
+					} : null);
+				}
+			}, 500); // Update every 500ms for smooth animation
 
 			const response = await fetch('/api/pdf/upload', {
 				method: 'POST',
 				body: formData,
 			});
+
+			// Clear progress simulation interval
+			if (progressIntervalRef.current) {
+				clearInterval(progressIntervalRef.current);
+				progressIntervalRef.current = null;
+			}
 
 			if (!response.ok) {
 				const error = await response.json();
@@ -119,11 +176,12 @@ export default function CreatePage() {
 				throw new Error(error.error || 'Upload failed');
 			}
 
+			// Update status after response is received - now parsing and showing result
 			setStatus({
 				id: '',
 				status: 'converting',
-				progress: 70,
-				message: 'AI is crafting your blog post...',
+				progress: 90,
+				message: 'Finalizing your blog post...',
 			});
 
 			const data = await response.json();
@@ -142,6 +200,12 @@ export default function CreatePage() {
 			setEditedContent(data.result.content);
 			setEditedTags(data.result.tags);
 		} catch (error) {
+			// Clear progress simulation interval on error
+			if (progressIntervalRef.current) {
+				clearInterval(progressIntervalRef.current);
+				progressIntervalRef.current = null;
+			}
+
 			setStatus({
 				id: '',
 				status: 'failed',
@@ -227,7 +291,10 @@ export default function CreatePage() {
 			const data = await response.json();
 			
 			if (data.success) {
-				alert(isDraft ? '✅ Blog saved as draft!' : '🎉 Blog published successfully!');
+				showNotification(
+					isDraft ? 'Blog saved as draft!' : 'Blog published successfully!',
+					'success'
+				);
 				// Redirect to the blog page
 				setTimeout(() => {
 					window.location.href = `/blog/${data.blog.slug}`;
@@ -237,7 +304,7 @@ export default function CreatePage() {
 			}
 		} catch (error) {
 			console.error('Publish error:', error);
-			alert('❌ Failed to publish blog. Please try again.');
+			showNotification('Failed to publish blog. Please try again.', 'error');
 		} finally {
 			setIsPublishing(false);
 		}
@@ -545,6 +612,13 @@ export default function CreatePage() {
 					)}
 				</div>
 			)}
+
+			<Notification
+				isOpen={notification.isOpen}
+				message={notification.message}
+				type={notification.type}
+				onClose={() => setNotification({ ...notification, isOpen: false })}
+			/>
 		</div>
 	);
 }
