@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Save, ArrowLeft, X, Plus, Loader2 } from 'lucide-react';
 import { BlogPost } from '@/lib/dynamodb';
 import dynamic from 'next/dynamic';
+import Notification, { NotificationType } from '@/app/components/Notification/Notification';
 import styles from './edit-blog.module.css';
 
 const RichTextEditor = dynamic(() => import('./RichTextEditor'), {
@@ -35,6 +36,15 @@ export default function EditBlogPage() {
 	const [editorMode, setEditorMode] = useState<'rich' | 'html'>('rich');
 	const [thumbnailUrl, setThumbnailUrl] = useState('');
 	const [logoUrl, setLogoUrl] = useState('');
+	const [notification, setNotification] = useState<{ isOpen: boolean; message: string; type: NotificationType }>({
+		isOpen: false,
+		message: '',
+		type: 'info',
+	});
+
+	const showNotification = (message: string, type: NotificationType = 'info') => {
+		setNotification({ isOpen: true, message, type });
+	};
 
 	useEffect(() => {
 		fetchBlog();
@@ -43,7 +53,7 @@ export default function EditBlogPage() {
 	const fetchBlog = async () => {
 		setLoading(true);
 		try {
-			const response = await fetch(`/api/blogs/all`);
+			const response = await fetch(`/api/blogs/my-blogs`);
 			if (response.ok) {
 				const data = await response.json();
 				const foundBlog = data.blogs.find((b: BlogPost) => b.slug === slug);
@@ -58,13 +68,13 @@ export default function EditBlogPage() {
 					setThumbnailUrl(foundBlog.thumbnail_url || '');
 					setLogoUrl(foundBlog.logo_url || '');
 				} else {
-					alert('Blog not found');
-					router.push('/my-blogs');
+					showNotification('Blog not found', 'error');
+					setTimeout(() => router.push('/my-blogs'), 2000);
 				}
 			}
 		} catch (error) {
 			console.error('Error fetching blog:', error);
-			alert('Failed to load blog');
+			showNotification('Failed to load blog', 'error');
 		} finally {
 			setLoading(false);
 		}
@@ -72,7 +82,7 @@ export default function EditBlogPage() {
 
 	const handleSave = async () => {
 		if (!title.trim()) {
-			alert('Please enter a blog title');
+			showNotification('Please enter a blog title', 'warning');
 			return;
 		}
 
@@ -96,14 +106,14 @@ export default function EditBlogPage() {
 			});
 
 			if (response.ok) {
-				alert('✅ Blog updated successfully!');
-				router.push('/my-blogs');
+				showNotification('Blog updated successfully!', 'success');
+				setTimeout(() => router.push('/my-blogs'), 1500);
 			} else {
 				throw new Error('Failed to update blog');
 			}
 		} catch (error) {
 			console.error('Error updating blog:', error);
-			alert('❌ Failed to update blog. Please try again.');
+			showNotification('Failed to update blog. Please try again.', 'error');
 		} finally {
 			setSaving(false);
 		}
@@ -340,6 +350,13 @@ export default function EditBlogPage() {
 					</button>
 				</div>
 			</div>
+
+			<Notification
+				isOpen={notification.isOpen}
+				message={notification.message}
+				type={notification.type}
+				onClose={() => setNotification({ ...notification, isOpen: false })}
+			/>
 		</div>
 	);
 }
