@@ -14,6 +14,9 @@ export const metadata: Metadata = {
 	}
 }
 
+// Force dynamic rendering to ensure fresh data on each request
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
 	const recentBlogs = await getRecentBlogs(6)
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { dynamoDB, TABLES } from '@/lib/dynamodb'
 import { UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import { DeleteCommand } from '@aws-sdk/lib-dynamodb'
@@ -19,6 +20,10 @@ export async function DELETE(
                 })
 
                 await dynamoDB.send(command)
+
+                // Revalidate the homepage and blog pages to reflect the deletion
+                revalidatePath('/')
+                revalidatePath(`/blog/${slug}`)
 
                 return NextResponse.json({
                         success: true,
